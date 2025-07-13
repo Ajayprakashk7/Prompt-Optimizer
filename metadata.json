@@ -1,5 +1,6 @@
 {
   "name": "Prompt Optimizer",
   "description": "An AI-powered web application that transforms simple or messy user prompts into highly effective, structured prompts suitable for advanced generative AI models. It acts as an expert prompt engineer to enhance clarity, context, and formatting.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "prompt": ""
 }

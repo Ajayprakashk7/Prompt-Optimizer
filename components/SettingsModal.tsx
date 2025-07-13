@@ -1,73 +1,130 @@
+
 import React, { useState, useEffect } from 'react';
+import { getApiKey, saveApiKey, clearApiKey } from '../services/configService';
+import { XMarkIcon } from './Icons';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (apiKey: string) => void;
-  initialApiKey: string | null;
+  onKeyChange: () => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onSave, initialApiKey }) => {
-  const [apiKey, setApiKey] = useState(initialApiKey || '');
+export const SettingsModal = React.memo<SettingsModalProps>(({ isOpen, onClose, onKeyChange }) => {
+  const [keyInput, setKeyInput] = useState('');
+  const [hasExistingKey, setHasExistingKey] = useState(false);
 
-  // Sync internal state with prop changes and modal state
   useEffect(() => {
-    // Only update if modal is open to avoid unnecessary updates when closed
     if (isOpen) {
-      setApiKey(initialApiKey || '');
+      const fetchKey = async () => {
+        const existingKey = await getApiKey();
+        setKeyInput(existingKey || '');
+        setHasExistingKey(!!existingKey);
+      };
+      fetchKey();
     }
-  }, [isOpen, initialApiKey]);
+  }, [isOpen]);
+
+  const handleSave = async () => {
+    await saveApiKey(keyInput);
+    onKeyChange();
+    onClose();
+    alert('API Key saved!');
+  };
+
+  const handleClear = async () => {
+    await clearApiKey();
+    setKeyInput('');
+    onKeyChange();
+    setHasExistingKey(false);
+    alert('API Key cleared. Using the shared key with daily limits.');
+  };
 
   if (!isOpen) return null;
 
-  const handleSave = () => {
-    onSave(apiKey);
-    onClose();
-  };
-
   return (
-    <div 
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      style={{ padding: 'var(--container-padding)' }}
       onClick={onClose}
+      aria-modal="true"
+      role="dialog"
     >
-      <div 
-        className="bg-slate-800 rounded-xl shadow-2xl ring-1 ring-white/10 w-full max-w-md p-6"
-        onClick={(e) => e.stopPropagation()}
+      <div
+        className="bg-zinc-900 rounded-lg shadow-xl w-full max-w-md relative ring-1 ring-white/10"
+        style={{
+          padding: 'var(--space-6)',
+          maxWidth: 'min(90vw, 28rem)',
+          maxHeight: '90vh',
+          overflow: 'auto'
+        }}
+        onClick={e => e.stopPropagation()}
       >
-        <h2 className="text-2xl font-bold text-slate-100">Settings</h2>
-        <p className="text-slate-400 mt-2">
-          Your API key is stored securely in your browser's local storage or synced Chrome storage. It is never sent anywhere except to the Google Gemini API.
+        <button
+          onClick={onClose}
+          className="touch-target absolute text-zinc-400 hover:text-white transition-colors"
+          style={{ top: 'var(--space-3)', right: 'var(--space-3)', padding: 'var(--space-1)' }}
+          aria-label="Close settings"
+        >
+          <XMarkIcon />
+        </button>
+        <h2 className="font-bold text-high-contrast" style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-4)' }}>API Key Settings</h2>
+        <p className="text-medium-contrast" style={{ fontSize: 'var(--text-sm)', lineHeight: '1.6', marginBottom: 'var(--space-3)' }}>
+          The app includes 5 free optimizations per day. For unlimited use, add your own Google Gemini API key. Your key is stored securely in your browser's local storage.
         </p>
-        
-        <div className="mt-6">
-          <label htmlFor="apiKey" className="block text-sm font-medium text-slate-300 mb-2">
-            Gemini API Key
-          </label>
-          <input
-            type="password"
-            id="apiKey"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="Enter your API key here"
-          />
-        </div>
+        <a
+          href="https://aistudio.google.com/app/apikey"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-indigo-400 hover:text-indigo-300 font-medium block"
+          style={{ fontSize: 'var(--text-xs)', marginBottom: 'var(--space-4)' }}
+        >
+          Get your free key from Google AI Studio &rarr;
+        </a>
 
-        <div className="mt-6 flex justify-end gap-4">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-md text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 transition-colors"
-          >
-            Save Key
-          </button>
+        <label htmlFor="api-key-input" className="block font-medium text-medium-contrast" style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--space-2)' }}>
+          Your Google Gemini API Key
+        </label>
+        <input
+          id="api-key-input"
+          type="password"
+          value={keyInput}
+          onChange={(e) => setKeyInput(e.target.value)}
+          placeholder="Enter your API key"
+          className="w-full bg-zinc-800 border border-zinc-700 text-high-contrast rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          style={{ fontSize: 'var(--text-sm)', lineHeight: '1.5', padding: 'var(--space-3)' }}
+        />
+
+        <div className="flex justify-between items-center" style={{ marginTop: 'var(--space-6)' }}>
+           <div>
+            {hasExistingKey && (
+              <button
+                onClick={handleClear}
+                className="touch-target font-medium text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
+                style={{ fontSize: 'var(--text-xs)', padding: 'var(--space-2) var(--space-3)' }}
+              >
+                Clear Key
+              </button>
+            )}
+           </div>
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={onClose}
+              className="touch-target font-medium text-medium-contrast bg-zinc-700 hover:bg-zinc-600 rounded-md transition-colors"
+              style={{ fontSize: 'var(--text-xs)', padding: 'var(--space-2) var(--space-3)' }}
+            >
+              Close
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!keyInput.trim()}
+              className="touch-target font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ fontSize: 'var(--text-xs)', padding: 'var(--space-2) var(--space-3)' }}
+            >
+              Save Key
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
-};
+});

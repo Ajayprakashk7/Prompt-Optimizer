@@ -1,193 +1,405 @@
-import React, { useState, useCallback, useEffect, Suspense, lazy, useMemo } from 'react';
-import { optimizePrompt } from './services/geminiService';
-import { getApiKey, saveApiKey } from './services/configService';
+
+import React, { useState, useCallback, useEffect, lazy, Suspense } from 'react';
+import { RateLimitError, organizePrompt, optimizePrompt } from './services/geminiService';
+import { getHistory, addPromptToHistory, deletePromptFromHistory, SavedPrompt, saveHistory } from './services/historyService';
+import {
+    getOptimizationHistory,
+    addOptimizationHistoryEntry,
+    deleteOptimizationHistoryEntry,
+    clearOptimizationHistory,
+    OptimizationHistoryEntry
+} from './services/optimizationHistoryService';
+import { importPromptHistory } from './services/exportService';
+import { interpolateVariables } from './utils/promptUtils';
+import { getRemainingRequests } from './services/rateLimitService';
+import { hasPersonalApiKey } from './services/configService';
+
 import { Header } from './components/Header';
 import { PromptInput } from './components/PromptInput';
 import { PromptOutput } from './components/PromptOutput';
 import { Loader } from './components/Loader';
-import { MagicWandIcon, UserCircleIcon, PaintBrushIcon } from './components/Icons';
+import { RocketLaunchIcon } from './components/Icons';
 import { Footer } from './components/Footer';
-import { examplePrompts, personas, vibes } from './data/prompts';
+import { EXAMPLE_PROMPTS, PROMPT_MODES } from './constants';
+import { ModeSelector } from './components/ModeSelector';
+import { usePersistentState } from './hooks/usePersistentState';
+import { VariableEditor } from './components/VariableEditor';
 
-// Lazy load SettingsModal since it's not always needed
-const SettingsModal = lazy(() => import('./components/SettingsModal').then(module => ({ default: module.SettingsModal })));
+// Lazy load heavy components that aren't needed immediately
+const HistoryPanel = lazy(() => import('./components/HistoryPanel').then(m => ({ default: m.HistoryPanel })));
+const OptimizationHistoryPanel = lazy(() => import('./components/OptimizationHistoryPanel').then(m => ({ default: m.OptimizationHistoryPanel })));
+const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
 
-export const App: React.FC = () => {
-  const [userInput, setUserInput] = useState('');
-  const [optimizedPrompt, setOptimizedPrompt] = useState('');
+
+const App: React.FC = () => {
+  const [userInput, setUserInput] = usePersistentState('userInput', '');
+  const [optimizedPrompt, setOptimizedPrompt] = usePersistentState('optimizedPrompt', '');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPersona, setSelectedPersona] = useState('Default');
-  const [selectedVibe, setSelectedVibe] = useState('Default');
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-  const [refreshUsage, setRefreshUsage] = useState(0); // Trigger for usage refresh
+
+  const [promptMode, setPromptMode] = usePersistentState('promptMode', PROMPT_MODES[1].value); // Default to 'Pro'
+  const [variables, setVariables] = usePersistentState<Record<string, string>>('variables', {});
+
+  const [savedPrompts, setSavedPrompts] = useState<SavedPrompt[]>([]);
+  const [optimizationHistory, setOptimizationHistory] = useState<OptimizationHistoryEntry[]>([]);
+  
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isOptimizationHistoryOpen, setIsOptimizationHistoryOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  
+  const [appVersion, setAppVersion] = useState(0); 
+  const forceRerender = () => setAppVersion(v => v + 1);
+
+  const [hasPersonalKey, setHasPersonalKey] = useState(false);
+  const [remainingRequests, setRemainingRequests] = useState(0);
 
   useEffect(() => {
-    const loadApiKey = async () => {
-      const savedKey = await getApiKey();
-      setApiKey(savedKey || '');
+    // Defer loading of history data to improve initial render performance
+    const loadInitialData = async () => {
+        // Use requestIdleCallback for better performance
+        const loadData = async () => {
+            const [prompts, optHistory] = await Promise.all([
+                getHistory(),
+                getOptimizationHistory(),
+            ]);
+            setSavedPrompts(prompts);
+            setOptimizationHistory(optHistory);
+        };
+
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(loadData);
+        } else {
+            // Fallback for browsers without requestIdleCallback
+            setTimeout(loadData, 0);
+        }
     };
-    loadApiKey();
+
+    loadInitialData();
   }, []);
 
+  // This effect will run on mount and whenever an API call completes or the key is changed.
+  useEffect(() => {
+    const refreshUsageData = async () => {
+        const [hasKey, remRequests] = await Promise.all([
+            hasPersonalApiKey(),
+            getRemainingRequests(),
+        ]);
+        setHasPersonalKey(hasKey);
+        setRemainingRequests(remRequests);
+    };
+    refreshUsageData();
+  }, [appVersion]);
+
+
+  const handleApiError = useCallback((e: unknown) => {
+    if (e instanceof Error) {
+      setError(e.message);
+    } else {
+      setError('An unknown error occurred.');
+    }
+  }, []);
+  
+  const resetOutputState = useCallback(() => {
+    setOptimizedPrompt('');
+    setError(null);
+  }, [setOptimizedPrompt]);
+
   const handleOptimize = useCallback(async () => {
-    if (!userInput.trim()) {
+    const resolvedInput = interpolateVariables(userInput, variables);
+    if (!resolvedInput.trim()) {
       setError('Please enter a prompt to optimize.');
       return;
     }
 
     setIsLoading(true);
-    setError(null);
-    
+    resetOutputState();
+
     try {
-      const result = await optimizePrompt(userInput, selectedVibe, selectedPersona);
-      setOptimizedPrompt(result);
-      setRefreshUsage(prev => prev + 1); // Trigger usage refresh
-    } catch (err) {
-      console.error('Error optimizing prompt:', err);
-      if (err instanceof Error) {
-        if (err.message.includes('Daily limit reached')) {
-          // Only show settings modal when limit is actually reached
-          setError(err.message);
-          setIsSettingsOpen(true);
-        } else if (err.message.includes('API_KEY_INVALID') || err.message.includes('API key')) {
-          setError('Invalid API key. Please check your Gemini API key in settings.');
-          setIsSettingsOpen(true);
-        } else {
-          setError(err.message || 'Failed to optimize prompt. Please try again.');
+      const stream = await optimizePrompt(resolvedInput, promptMode);
+      let fullResponse = '';
+
+      // Batch updates to reduce re-renders during streaming
+      let updateBuffer = '';
+      let lastUpdate = Date.now();
+
+      for await (const chunk of stream) {
+        updateBuffer += chunk;
+        fullResponse += chunk;
+
+        // Throttle updates to every 100ms for better performance
+        const now = Date.now();
+        if (now - lastUpdate > 100) {
+          setOptimizedPrompt(fullResponse);
+          lastUpdate = now;
         }
+      }
+
+      // Final update
+      setOptimizedPrompt(fullResponse);
+
+      if (fullResponse.trim()) {
+        // Use requestIdleCallback for non-critical operations
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(async () => {
+            await addOptimizationHistoryEntry({
+                rawPrompt: userInput,
+                optimizedPrompt: fullResponse,
+                variables,
+                mode: promptMode
+            });
+            const updatedOptHistory = await getOptimizationHistory();
+            setOptimizationHistory(updatedOptHistory);
+          });
+        } else {
+          // Fallback for browsers without requestIdleCallback
+          setTimeout(async () => {
+            await addOptimizationHistoryEntry({
+                rawPrompt: userInput,
+                optimizedPrompt: fullResponse,
+                variables,
+                mode: promptMode
+            });
+            const updatedOptHistory = await getOptimizationHistory();
+            setOptimizationHistory(updatedOptHistory);
+          }, 0);
+        }
+      }
+      // After a successful operation, refresh usage data
+      forceRerender();
+    } catch (e) {
+      if (e instanceof RateLimitError) {
+        setError(e.message);
+        setIsSettingsModalOpen(true);
       } else {
-        setError('An unexpected error occurred. Please try again.');
+        handleApiError(e);
       }
     } finally {
       setIsLoading(false);
     }
-  }, [userInput, selectedVibe, selectedPersona]);
+  }, [userInput, variables, promptMode, resetOutputState, handleApiError, forceRerender]);
+  
+  const handleRegenerate = useCallback(async () => {
+    await handleOptimize();
+  }, [handleOptimize]);
 
-  const handleSaveKey = useCallback(async (newKey: string) => {
-    await saveApiKey(newKey);
-    setApiKey(newKey);
+  const handleSavePrompt = useCallback(async () => {
+    if (!optimizedPrompt || isSaving) return;
+    
+    setIsSaving(true);
     setError(null);
+    try {
+      let title: string;
+      let category: string;
+
+      try {
+        const organizedData = await organizePrompt(optimizedPrompt);
+        title = organizedData.title;
+        category = organizedData.category;
+        // After a successful operation, refresh usage data
+        forceRerender();
+      } catch (e) {
+        // If rate limited, show modal and abort the save.
+        if (e instanceof RateLimitError) {
+          setError(e.message);
+          setIsSettingsModalOpen(true);
+          return; // ABORT. The finally block will still run to set isSaving to false.
+        }
+        
+        // For other errors, log it, notify the user, and fall back to a default title.
+        console.warn("Could not organize prompt via AI, saving with default title/category.", e);
+        setError("Couldn't generate a title automatically, but your prompt was saved.");
+        title = 'Untitled: ' + optimizedPrompt.split('\n')[0].split(' ').slice(0, 4).join(' ') + '...';
+        category = 'Uncategorized';
+      }
+      
+      const newPrompt: SavedPrompt = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+        prompt: userInput,
+        optimizedPrompt: optimizedPrompt,
+        title,
+        category,
+        createdAt: new Date().toISOString(),
+        variables, 
+      };
+      await addPromptToHistory(newPrompt);
+      const updatedHistory = await getHistory();
+      setSavedPrompts(updatedHistory);
+    } catch(e) {
+      handleApiError(e);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [optimizedPrompt, userInput, variables, isSaving, handleApiError]);
+
+  const handleDeletePrompt = useCallback(async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this saved prompt? This action cannot be undone.')) {
+      await deletePromptFromHistory(id);
+      const updatedHistory = await getHistory();
+      setSavedPrompts(updatedHistory);
+    }
   }, []);
 
-  const handlePersonaChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedPersona(e.target.value);
+  const handleUsePrompt = useCallback((prompt: SavedPrompt) => {
+    resetOutputState();
+    setUserInput(prompt.prompt);
+    setOptimizedPrompt(prompt.optimizedPrompt || '');
+    setVariables(prompt.variables || {}); 
+    setIsHistoryOpen(false);
+  }, [setUserInput, setVariables, setOptimizedPrompt, resetOutputState]);
+    
+  const handleUseOptimization = useCallback((entry: OptimizationHistoryEntry) => {
+    resetOutputState();
+    setUserInput(entry.rawPrompt);
+    setOptimizedPrompt(entry.optimizedPrompt);
+    setVariables(entry.variables || {});
+    setPromptMode(entry.mode);
+    setIsOptimizationHistoryOpen(false);
+  }, [setUserInput, setVariables, setPromptMode, setOptimizedPrompt, resetOutputState]);
+  
+  const handleDeleteOptimization = useCallback(async (id: string) => {
+    await deleteOptimizationHistoryEntry(id);
+    const updatedHistory = await getOptimizationHistory();
+    setOptimizationHistory(updatedHistory);
   }, []);
 
-  const handleVibeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedVibe(e.target.value);
+  const handleClearOptimizationHistory = useCallback(async () => {
+    if (window.confirm('Are you sure you want to clear the entire optimization history? This cannot be undone.')) {
+      await clearOptimizationHistory();
+      setOptimizationHistory([]);
+    }
   }, []);
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleImportHistory = useCallback(async (file: File) => {
+    try {
+        const imported = await importPromptHistory(file);
+        const current = await getHistory();
+        // Simple merge: add new, don't update existing by id.
+        const newPrompts = imported.filter(p => !current.some(c => c.id === p.id));
+        const merged = [...newPrompts, ...current];
+        await saveHistory(merged);
+        setSavedPrompts(await getHistory());
+        alert(`${newPrompts.length} new prompts imported successfully!`);
+    } catch(e) {
+        console.error("Import failed", e);
+        alert(`Import failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    }
+  }, []);
+  
+  const handleApiKeyChange = useCallback(() => {
+    forceRerender();
+  }, []);
+
+  const handleRefinePrompt = useCallback((prompt: string) => {
+    setUserInput(`Refine the following prompt to be more concise:\n\n---\n\n${prompt}`);
+    resetOutputState();
+  }, [setUserInput, resetOutputState]);
+
+  const onHistoryClick = useCallback(() => setIsHistoryOpen(true), []);
+  const onOptimizationHistoryClick = useCallback(() => setIsOptimizationHistoryOpen(true), []);
+  const onSettingsClick = useCallback(() => setIsSettingsModalOpen(true), []);
+  
+  const handleUserInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setUserInput(e.target.value);
-  }, []);
-
-  const handleStarterClick = useCallback((prompt: string) => {
-    setUserInput(prompt);
-  }, []);
-
-  const handleSettingsOpen = useCallback(() => {
-    setIsSettingsOpen(true);
-  }, []);
-
-  const handleSettingsClose = useCallback(() => {
-    setIsSettingsOpen(false);
-  }, []);
-
-  // Memoize persona options to prevent re-rendering
-  const personaOptions = useMemo(() => 
-    personas.map((persona) => (
-      <option key={persona} value={persona}>
-        {persona}
-      </option>
-    )), []);
-
-  // Memoize vibe options to prevent re-rendering
-  const vibeOptions = useMemo(() => 
-    vibes.map((vibe) => (
-      <option key={vibe} value={vibe}>
-        {vibe}
-      </option>
-    )), []);
+    if (error) setError(null);
+  }, [error, setUserInput]);
 
   return (
-    <div className="min-h-screen flex flex-col p-4 sm:p-6 lg:p-8 bg-slate-900 text-slate-300">
-      <Suspense fallback={<div />}>
-        <SettingsModal 
-          isOpen={isSettingsOpen}
-          onClose={handleSettingsClose}
-          onSave={handleSaveKey}
-          initialApiKey={apiKey}
-        />
-      </Suspense>
-      <Header 
-        onSettingsClick={handleSettingsOpen} 
-        refreshTrigger={refreshUsage}
+    <div className="extension-container bg-zinc-950">
+      <Header
+        onHistoryClick={onHistoryClick}
+        onOptimizationHistoryClick={onOptimizationHistoryClick}
+        onSettingsClick={onSettingsClick}
+        hasPersonalKey={hasPersonalKey}
+        remainingRequests={remainingRequests}
       />
-      
-      <main className="flex-grow flex flex-col gap-6 mt-6">
-        <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
-          
-          {/* Left Column: Input */}
-          <div className="lg:w-1/2 flex flex-col gap-4">
-            <PromptInput
-              value={userInput}
-              onChange={handleInputChange}
-              placeholder="Start with a simple idea, like 'write a story about a lonely robot'..."
-              starters={examplePrompts}
-              onStarterClick={handleStarterClick}
-            />
-            
-            {/* Persona and Vibe Selection */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2">
-                  <UserCircleIcon />
-                  Persona
-                </label>
-                <select
-                  value={selectedPersona}
-                  onChange={handlePersonaChange}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  {personaOptions}
-                </select>
-              </div>
-              
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2">
-                  <PaintBrushIcon />
-                  Vibe
-                </label>
-                <select
-                  value={selectedVibe}
-                  onChange={handleVibeChange}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  {vibeOptions}
-                </select>
-              </div>
+
+      <main className="extension-main">
+        <div className="responsive-grid">
+          {/* Left Column */}
+          <div className="responsive-column">
+            <div className="flex flex-col flex-grow min-h-0">
+              <PromptInput
+                value={userInput}
+                onChange={handleUserInputChange}
+                placeholder="e.g., Refactor this Python function to be more efficient..."
+                starters={EXAMPLE_PROMPTS}
+                onStarterClick={(starter) => setUserInput(starter.prompt)}
+                grow={true}
+              />
             </div>
 
-            <button
-              onClick={handleOptimize}
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 text-lg font-bold text-white bg-indigo-600 rounded-lg shadow-lg hover:bg-indigo-500 disabled:bg-slate-600 disabled:cursor-wait transition-all transform hover:scale-105"
-            >
-              {isLoading ? <Loader /> : <MagicWandIcon />}
-              {isLoading ? 'Optimizing...' : 'Optimize Prompt'}
-            </button>
-            {error && <p className="text-center text-red-400 text-sm mt-2">{error}</p>}
+            <div className="flex-shrink-0 space-y-4">
+              <VariableEditor
+                promptText={userInput}
+                variables={variables}
+                onVariablesChange={setVariables}
+              />
+
+              <ModeSelector
+                modes={PROMPT_MODES}
+                selectedMode={promptMode}
+                onSelectMode={setPromptMode}
+              />
+
+              <button
+                onClick={handleOptimize}
+                disabled={isLoading}
+                className="touch-target w-full bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                style={{ fontSize: 'var(--text-sm)', padding: 'var(--space-3) var(--space-4)' }}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  {isLoading ? <Loader /> : <RocketLaunchIcon className="h-6 w-6" />}
+                  {isLoading ? 'Optimizing...' : 'Optimize Prompt'}
+                </span>
+              </button>
+            </div>
           </div>
 
-          {/* Right Column: Output */}
-          <div className="lg:w-1/2">
-            <PromptOutput prompt={optimizedPrompt} isLoading={isLoading} />
+          {/* Right Column */}
+          <div className="responsive-column">
+            <PromptOutput
+              prompt={optimizedPrompt}
+              isLoading={isLoading}
+              onSave={handleSavePrompt}
+              isSaving={isSaving}
+              onRefine={handleRefinePrompt}
+              onRegenerate={handleRegenerate}
+              error={error}
+              onErrorDismiss={() => setError(null)}
+            />
           </div>
         </div>
       </main>
+
       <Footer />
+      
+      <Suspense fallback={<div className="fixed inset-0 bg-black/50 flex items-center justify-center"><Loader /></div>}>
+        <HistoryPanel
+          isOpen={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+          prompts={savedPrompts}
+          onUse={handleUsePrompt}
+          onDelete={handleDeletePrompt}
+          onImport={handleImportHistory}
+        />
+
+        <OptimizationHistoryPanel
+          isOpen={isOptimizationHistoryOpen}
+          onClose={() => setIsOptimizationHistoryOpen(false)}
+          history={optimizationHistory}
+          onUse={handleUseOptimization}
+          onDelete={handleDeleteOptimization}
+          onClear={handleClearOptimizationHistory}
+        />
+
+        <SettingsModal
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          onKeyChange={handleApiKeyChange}
+        />
+      </Suspense>
+
     </div>
   );
 };

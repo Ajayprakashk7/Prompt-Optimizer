@@ -1,13 +1,31 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <meta name="color-scheme" content="dark" />
     <title>Prompt Optimizer</title>
-    <link rel="stylesheet" href="/index.css">  </head>
-  <body class="bg-slate-900 text-slate-300 font-sans antialiased">
-    <div id="root"></div>
+
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//generativelanguage.googleapis.com" />
+
+    <!-- Responsive design support -->
+    <style>
+      /* Prevent layout shift during load */
+      html { font-size: 14px; }
+      @media (min-width: 480px) { html { font-size: 15px; } }
+      @media (min-width: 768px) { html { font-size: 16px; } }
+
+      /* High DPI support */
+      @media (-webkit-min-device-pixel-ratio: 2) {
+        html { font-size: 15px; }
+      }
+    </style>
+  </head>
+  <body class="bg-zinc-950 text-zinc-300 font-sans antialiased">
+    <div id="root" class="h-full"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

@@ -1,103 +1,80 @@
 import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 
 export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
     return {
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+      worker: {
+        format: 'es'
       },
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
       },
-      css: {
-        postcss: './postcss.config.js',
-      },
       build: {
-        rollupOptions: {
-          input: {
-            // Web app entry point
-            main: path.resolve(__dirname, 'index.html'),
-            // Chrome extension entry point
-            popup: path.resolve(__dirname, 'popup.html'),
-          },
-          output: {
-            entryFileNames: (chunkInfo) => {
-              // Keep extension files at root level for manifest.json
-              if (chunkInfo.name === 'popup') {
-                return 'popup.js';
-              }
-              return 'assets/[name]-[hash].js';
-            },
-            chunkFileNames: 'assets/[name]-[hash].js',
-            assetFileNames: (assetInfo) => {
-              if (assetInfo.name?.endsWith('.css')) {
-                // Extension CSS at root level
-                if (assetInfo.name.includes('popup')) {
-                  return 'popup.css';
-                }
-                return 'assets/[name]-[hash].css';
-              }
-              return 'assets/[name]-[hash].[ext]';
-            },
-            manualChunks: (id) => {
-              // Vendor chunks for better caching
-              if (id.includes('node_modules')) {
-                if (id.includes('react') || id.includes('react-dom')) {
-                  return 'react-vendor';
-                }
-                if (id.includes('@google/genai')) {
-                  return 'google-ai';
-                }
-                // Group other vendor dependencies
-                return 'vendor';
-              }
-              
-              // Separate data files to their own chunk
-              if (id.includes('/data/')) {
-                return 'data';
-              }
-              
-              // Service layer
-              if (id.includes('/services/')) {
-                return 'services';
-              }
-              
-              // Component chunk for shared components
-              if (id.includes('/components/') && !id.includes('SettingsModal')) {
-                return 'components';
-              }
-            }
-          }
-        },
-        outDir: 'dist',
-        emptyOutDir: true,
-        target: 'es2020',
+        target: 'esnext',
         minify: 'terser',
         terserOptions: {
           compress: {
             drop_console: true,
             drop_debugger: true,
-            pure_funcs: ['console.log', 'console.info', 'console.debug'],
-            passes: 2, // Multiple passes for better compression
-          },
-          mangle: {
-            safari10: true,
-          },
-          format: {
-            comments: false, // Remove all comments
           },
         },
-        cssMinify: true,
-        reportCompressedSize: true,
-        chunkSizeWarningLimit: 400, // Lower threshold to catch size issues earlier
-        sourcemap: false, // Disable sourcemaps in production for smaller files
-      },
-      server: {
-        hmr: false
+        rollupOptions: {
+          input: {
+            popup: 'index.html'
+          },
+          output: {
+            entryFileNames: 'assets/popup.js',
+            chunkFileNames: 'assets/[name]-[hash].js',
+            assetFileNames: (assetInfo) => {
+              if (assetInfo.name?.endsWith('.css')) {
+                return 'assets/popup.css';
+              }
+              return 'assets/[name].[ext]';
+            },
+            // Enable module preloading for better performance
+            experimentalMinChunkSize: 1000,
+            manualChunks: (id) => {
+              // Core React bundle - keep small for fast initial load
+              if (id.includes('react') && !id.includes('react-markdown')) {
+                return 'react-vendor';
+              }
+
+              // Lazy-loaded components
+              if (id.includes('HistoryPanel') || id.includes('OptimizationHistoryPanel') ||
+                  id.includes('SettingsModal')) {
+                return 'panels-lazy';
+              }
+
+              // Markdown processing - lazy loaded
+              if (id.includes('react-markdown') || id.includes('remark-gfm') ||
+                  id.includes('mdast-') || id.includes('micromark') ||
+                  id.includes('unist-') || id.includes('vfile')) {
+                return 'markdown-lazy';
+              }
+
+              // Syntax highlighting - lazy loaded
+              if (id.includes('highlight.js')) {
+                return 'highlight-lazy';
+              }
+
+              // Google AI packages
+              if (id.includes('@google/genai') || id.includes('google-auth-library') ||
+                  id.includes('gaxios') || id.includes('gcp-metadata')) {
+                return 'google-vendor';
+              }
+
+              // Tokenizer - separate chunk for worker
+              if (id.includes('gpt-tokenizer')) {
+                return 'tokenizer-lazy';
+              }
+
+              return null;
+            }
+          }
+        },
+        chunkSizeWarningLimit: 500
       }
     };
 });
