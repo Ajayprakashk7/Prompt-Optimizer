@@ -45,7 +45,7 @@ export const ModeSelector = React.memo<ModeSelectorProps>(({ modes, selectedMode
 
   return (
     <div className="w-full">
-      <label className="flex items-center gap-2 font-medium text-zinc-300 mb-3" style={{ fontSize: 'var(--text-sm)' }}>
+      <label className="flex items-center gap-2 font-medium text-zinc-300 mb-2" style={{ fontSize: 'var(--text-sm)' }}>
         <TuneIcon />
         Prompt Mode
       </label>
@@ -68,14 +68,14 @@ export const ModeSelector = React.memo<ModeSelectorProps>(({ modes, selectedMode
                 key={mode.value}
                 onClick={() => handleModeSelect(mode.value)}
                 className={`
-                  mode-selector-button group relative flex-1 flex items-center justify-center gap-2 py-2 px-3
+                  mode-selector-button group relative flex-1 flex items-center justify-center gap-2 py-1.5 px-2.5
                   rounded-md transition-all duration-300 ease-out
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50
                   ${isActive ? 'text-white font-semibold z-10' : 'text-zinc-400 hover:text-zinc-200'}
                 `}
                 style={{
                   fontSize: 'var(--text-xs)',
-                  minHeight: '36px'
+                  minHeight: '32px'
                 }}
                 aria-pressed={isActive}
                 aria-label={`${mode.label} mode`}

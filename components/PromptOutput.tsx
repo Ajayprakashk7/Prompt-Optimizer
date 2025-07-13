@@ -65,7 +65,7 @@ const CollapsibleSection: React.FC<{ title: string; children: React.ReactNode }>
     <details className="group" open>
       <summary className="flex items-center gap-2 cursor-pointer list-none p-2 rounded-md hover:bg-zinc-800/50">
         <ChevronRightIcon className="w-4 h-4 text-zinc-500 transition-transform group-open:rotate-90" />
-        <span className="font-medium text-sm text-zinc-200">{title}</span>
+        <span className="font-semibold text-zinc-200">{title}</span>
       </summary>
       <div className="pl-6 pt-1 pb-2 border-l border-zinc-800 ml-2 prose prose-sm prose-invert max-w-none">
         {children}
@@ -116,7 +116,7 @@ const MoreOptionsMenu: React.FC<{
                 key={label}
                 onClick={() => { action(); setIsOpen(false); }}
                 disabled={!prompt}
-                className={`w-full text-left flex items-center gap-3 px-4 py-2 text-xs transition-colors disabled:opacity-50 ${color || 'text-zinc-200'} enabled:hover:bg-zinc-700`}
+                className={`w-full text-left flex items-center gap-3 px-4 py-2 text-sm transition-colors disabled:opacity-50 ${color || 'text-zinc-200'} enabled:hover:bg-zinc-700`}
               >
                 <Icon className={`w-5 h-5 ${color || 'text-zinc-400'}`} />
                 <span>{label}</span>
@@ -282,44 +282,41 @@ export const PromptOutput: React.FC<PromptOutputProps> = React.memo(({
   
   return (
     <div className="relative flex flex-col h-full bg-zinc-900 rounded-xl shadow-2xl ring-1 ring-zinc-800">
-      <div className="flex-shrink-0 flex justify-between items-center bg-zinc-800/80 rounded-t-xl" style={{ padding: 'var(--space-3) var(--space-4)' }}>
-        <h2 className="font-semibold text-high-contrast" style={{ fontSize: 'var(--text-sm)' }}>Optimized Prompt</h2>
-        <div className="flex items-center gap-2">
+      <div className="flex-shrink-0 flex justify-between items-center bg-zinc-800/80 px-4 py-2 rounded-t-xl">
+        <h2 className="text-base font-semibold text-zinc-200">Optimized Prompt</h2>
+        <div className="flex items-center gap-1">
             <button
               onClick={onSave}
               disabled={!prompt || isLoading || isSaving}
-              className="touch-target flex items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed group relative text-zinc-400 enabled:hover:text-white enabled:hover:bg-zinc-700"
-              style={{ padding: 'var(--space-2)' }}
+              className="p-2 w-9 h-9 flex items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed group relative text-zinc-400 enabled:hover:text-white enabled:hover:bg-zinc-700"
               aria-label={saveButtonTooltip}
             >
               {isSaving ? <Loader /> : <BookmarkIcon className="w-5 h-5" />}
-               <span className="absolute bottom-full right-1/2 translate-x-1/2 mb-2 w-max text-xs text-white bg-zinc-950 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" style={{ padding: 'var(--space-1) var(--space-2)' }}>
+               <span className="absolute bottom-full right-1/2 translate-x-1/2 mb-2 w-max px-2 py-1 text-xs text-white bg-zinc-950 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 {saveButtonTooltip}
               </span>
             </button>
             <button
               onClick={() => onRefine(prompt)}
               disabled={!prompt || isLoading || isSaving}
-              className="touch-target flex items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed group relative text-zinc-400 enabled:hover:text-white enabled:hover:bg-zinc-700"
-              style={{ padding: 'var(--space-2)' }}
+              className="p-2 w-9 h-9 flex items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed group relative text-zinc-400 enabled:hover:text-white enabled:hover:bg-zinc-700"
               aria-label="Refine this prompt"
             >
               <PencilSquareIcon className="w-5 h-5" />
-              <span className="absolute bottom-full right-1/2 translate-x-1/2 mb-2 w-max text-xs text-white bg-zinc-950 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" style={{ padding: 'var(--space-1) var(--space-2)' }}>
+              <span className="absolute bottom-full right-1/2 translate-x-1/2 mb-2 w-max px-2 py-1 text-xs text-white bg-zinc-950 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 Refine
               </span>
             </button>
             <button
               onClick={handleCopy}
               disabled={!prompt || copied || isLoading}
-              className="touch-target flex items-center gap-2 font-semibold rounded-lg text-white bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              style={{ fontSize: 'var(--text-sm)', padding: 'var(--space-2) var(--space-4)' }}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-md text-white bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {copied ? <CheckIcon /> : <CopyIcon />}
               {copied ? 'Copied!' : 'Copy'}
             </button>
             
-            <div className="w-px h-6 bg-zinc-700 mx-1"></div>
+            <div className="w-px h-5 bg-zinc-700 mx-1"></div>
             
             <MoreOptionsMenu 
               prompt={prompt}
@@ -330,11 +327,11 @@ export const PromptOutput: React.FC<PromptOutputProps> = React.memo(({
             />
         </div>
       </div>
-      <div className="flex-grow p-4 overflow-auto min-h-[200px] no-scrollbar">
+      <div className="flex-grow p-1 overflow-auto min-h-[150px] no-scrollbar">
         {renderContent()}
       </div>
        {prompt && !isLoading && !error && (
-         <div className="flex-shrink-0 border-t border-zinc-800 px-4 py-2.5 text-xs text-zinc-500 text-right space-x-2">
+         <div className="flex-shrink-0 border-t border-zinc-800 px-4 py-1.5 text-xs text-zinc-500 text-right space-x-2">
              <span>{promptStats.tokens === null ? '--' : promptStats.tokens} tokens</span>
              <span className="text-zinc-600">/</span>
              <span>{promptStats.words} words</span>

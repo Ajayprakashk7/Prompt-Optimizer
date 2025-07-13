@@ -346,10 +346,10 @@ const App: React.FC = () => {
                 onClick={handleOptimize}
                 disabled={isLoading}
                 className="touch-target w-full bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-wait"
-                style={{ fontSize: 'var(--text-sm)', padding: 'var(--space-3) var(--space-4)' }}
+                style={{ fontSize: 'var(--text-xs)', padding: 'var(--space-2) var(--space-3)' }}
               >
                 <span className="flex items-center justify-center gap-2">
-                  {isLoading ? <Loader /> : <RocketLaunchIcon className="h-6 w-6" />}
+                  {isLoading ? <Loader /> : <RocketLaunchIcon className="h-5 w-5" />}
                   {isLoading ? 'Optimizing...' : 'Optimize Prompt'}
                 </span>
               </button>

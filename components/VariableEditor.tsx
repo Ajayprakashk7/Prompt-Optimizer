@@ -1,7 +1,7 @@
 
 
 import React, { useMemo, useEffect, useState } from 'react';
-import { VariableIcon } from './Icons';
+import { ChevronDownIcon, ChevronRightIcon, XMarkIcon, PlusIcon } from './Icons';
 
 interface VariableEditorProps {
     promptText: string;
@@ -9,46 +9,47 @@ interface VariableEditorProps {
     onVariablesChange: (updater: (prev: Record<string, string>) => Record<string, string>) => void;
 }
 
+// Common variable suggestions for different contexts
+const VARIABLE_SUGGESTIONS = [
+    'language', 'framework', 'task_type', 'input_data', 'output_format',
+    'context', 'requirements', 'constraints', 'example', 'style'
+];
+
 export const VariableEditor: React.FC<VariableEditorProps> = React.memo(({ promptText, variables, onVariablesChange }) => {
-    // By debouncing the prompt text internally, we prevent the expensive regex matching and
-    // state synchronization logic from running on every single keystroke. This significantly
-    // improves performance while the user is typing in the main input area.
+    const [isExpanded, setIsExpanded] = useState(false);
     const [debouncedPromptText, setDebouncedPromptText] = useState(promptText);
 
     useEffect(() => {
         const handler = setTimeout(() => {
             setDebouncedPromptText(promptText);
-        }, 300); // 300ms delay
-
-        return () => {
-            clearTimeout(handler);
-        };
+        }, 300);
+        return () => clearTimeout(handler);
     }, [promptText]);
-
 
     const detectedVars = useMemo(() => {
         const regex = /\{\{([a-zA-Z0-9_]+)\}\}/g;
-        // The regex now runs on the debounced text, not on every prop change.
         const matches = debouncedPromptText.match(regex) || [];
         return [...new Set(matches.map(v => v.replace(/[{}]/g, '')))];
     }, [debouncedPromptText]);
 
-    // This effect synchronizes the variable state. Because it depends on `detectedVars`,
-    // which in turn depends on the debounced text, this logic now only runs after the
-    // user has paused typing, avoiding unnecessary state updates.
+    // Only auto-expand on first detection, not every time
+    useEffect(() => {
+        if (detectedVars.length > 0 && !isExpanded && Object.keys(variables).length === 0) {
+            setIsExpanded(true);
+        }
+    }, [detectedVars.length, isExpanded, variables]);
+
     useEffect(() => {
         const detectedVarSet = new Set(detectedVars);
-        
+
         onVariablesChange(currentVars => {
             const newVarsState: Record<string, string> = {};
             let hasChanged = false;
 
-            // Build the new state from detected variables
             for (const key of detectedVarSet) {
                 newVarsState[key] = currentVars[key] || '';
             }
 
-            // Check if the keys are different from the current state
             const currentKeys = Object.keys(currentVars);
             if (currentKeys.length !== detectedVarSet.size) {
                 hasChanged = true;
@@ -61,14 +62,9 @@ export const VariableEditor: React.FC<VariableEditorProps> = React.memo(({ promp
                 }
             }
 
-            // Only update state if the set of variables has actually changed.
             return hasChanged ? newVarsState : currentVars;
         });
     }, [detectedVars, onVariablesChange]);
-
-    if (detectedVars.length === 0) {
-        return null;
-    }
 
     const handleInputChange = (varName: string, value: string) => {
         onVariablesChange(currentVars => ({
@@ -77,29 +73,128 @@ export const VariableEditor: React.FC<VariableEditorProps> = React.memo(({ promp
         }));
     };
 
+    const handleRemoveVariable = (varName: string) => {
+        onVariablesChange(currentVars => {
+            const newVars = { ...currentVars };
+            delete newVars[varName];
+            return newVars;
+        });
+    };
+
+    const handleAddSuggestion = (suggestion: string) => {
+        onVariablesChange(currentVars => ({
+            ...currentVars,
+            [suggestion]: ''
+        }));
+    };
+
+    // Don't render if no variables detected and not manually expanded
+    if (detectedVars.length === 0 && !isExpanded) {
+        return null;
+    }
+
+    const availableSuggestions = VARIABLE_SUGGESTIONS.filter(
+        suggestion => !detectedVars.includes(suggestion) && !variables[suggestion]
+    );
+
     return (
-        <div className="bg-zinc-950/50 rounded-lg p-4 mt-4">
-            <h3 className="flex items-center gap-2 text-sm font-medium text-zinc-200 mb-3">
-                <VariableIcon />
-                Define Prompt Variables
-            </h3>
-            <div className="space-y-3">
-                {detectedVars.map(varName => (
-                    <div key={varName} className="flex flex-col gap-1.5">
-                        <label htmlFor={`var-${varName}`} className="text-xs font-medium text-zinc-300">
-                            {varName}
-                        </label>
-                        <input
-                            id={`var-${varName}`}
-                            type="text"
-                            value={variables[varName] || ''}
-                            onChange={(e) => handleInputChange(varName, e.target.value)}
-                            placeholder={`Enter value for ${varName}...`}
-                            className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                        />
+        <div className="border border-zinc-700 rounded-lg overflow-hidden">
+            {/* Collapsible Header - Compact */}
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-full flex items-center justify-between p-2 bg-zinc-800/50 hover:bg-zinc-800/70 transition-colors text-left"
+            >
+                <div className="flex items-center gap-1.5">
+                    {isExpanded ? (
+                        <ChevronDownIcon className="w-3 h-3 text-zinc-400" />
+                    ) : (
+                        <ChevronRightIcon className="w-3 h-3 text-zinc-400" />
+                    )}
+                    <span className="text-xs font-medium text-zinc-200">
+                        Variables {detectedVars.length > 0 && `(${detectedVars.length})`}
+                    </span>
+                </div>
+                {detectedVars.length > 0 && (
+                    <div className="flex gap-1">
+                        {detectedVars.slice(0, 2).map(varName => (
+                            <span
+                                key={varName}
+                                className="px-1.5 py-0.5 text-xs bg-indigo-600/20 text-indigo-300 rounded"
+                            >
+                                {varName}
+                            </span>
+                        ))}
+                        {detectedVars.length > 2 && (
+                            <span className="px-1.5 py-0.5 text-xs bg-zinc-600/20 text-zinc-400 rounded">
+                                +{detectedVars.length - 2}
+                            </span>
+                        )}
                     </div>
-                ))}
-            </div>
+                )}
+            </button>
+
+            {/* Expandable Content - Compact & Scrollable */}
+            {isExpanded && (
+                <div className="max-h-32 overflow-y-auto bg-zinc-900/30">
+                    <div className="p-2 space-y-2">
+                        {/* Detected Variables - Inline Layout */}
+                        {detectedVars.map(varName => (
+                            <div key={varName} className="flex items-center gap-2">
+                                <span className="text-xs font-medium text-indigo-300 min-w-0 flex-shrink-0">
+                                    {varName}:
+                                </span>
+                                <input
+                                    type="text"
+                                    value={variables[varName] || ''}
+                                    onChange={(e) => handleInputChange(varName, e.target.value)}
+                                    placeholder="value..."
+                                    className="flex-1 bg-zinc-800 border border-zinc-600 text-zinc-200 rounded px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                                />
+                            </div>
+                        ))}
+
+                        {/* Manual Variables - Inline Layout */}
+                        {Object.entries(variables).filter(([key]) => !detectedVars.includes(key)).map(([varName, value]) => (
+                            <div key={varName} className="flex items-center gap-2">
+                                <span className="text-xs font-medium text-zinc-300 min-w-0 flex-shrink-0">
+                                    {varName}:
+                                </span>
+                                <input
+                                    type="text"
+                                    value={value}
+                                    onChange={(e) => handleInputChange(varName, e.target.value)}
+                                    placeholder="value..."
+                                    className="flex-1 bg-zinc-800 border border-zinc-600 text-zinc-200 rounded px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                                />
+                                <button
+                                    onClick={() => handleRemoveVariable(varName)}
+                                    className="p-0.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors flex-shrink-0"
+                                    title="Remove"
+                                >
+                                    <XMarkIcon className="w-3 h-3" />
+                                </button>
+                            </div>
+                        ))}
+
+                        {/* Quick Add Suggestions - Compact */}
+                        {availableSuggestions.length > 0 && (detectedVars.length + Object.keys(variables).filter(k => !detectedVars.includes(k)).length) < 3 && (
+                            <div className="pt-1 border-t border-zinc-700/50">
+                                <div className="flex flex-wrap gap-1">
+                                    {availableSuggestions.slice(0, 3).map(suggestion => (
+                                        <button
+                                            key={suggestion}
+                                            onClick={() => handleAddSuggestion(suggestion)}
+                                            className="px-1.5 py-0.5 text-xs bg-zinc-700/50 text-zinc-400 rounded hover:bg-zinc-600/50 hover:text-zinc-300 transition-colors"
+                                        >
+                                            +{suggestion}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 });
