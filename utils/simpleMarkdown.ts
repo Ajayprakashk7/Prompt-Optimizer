@@ -1,34 +1,51 @@
 import React from 'react';
 
-// Simple markdown parser for basic formatting in tooltips
-// Supports **bold** and basic text only
+// Enhanced markdown parser for tooltips
+// Supports **bold**, line breaks, and basic formatting
 export function parseSimpleMarkdown(text: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
-  let currentIndex = 0;
-  
-  // Find all **bold** patterns
-  const boldRegex = /\*\*(.*?)\*\*/g;
-  let match;
-  
-  while ((match = boldRegex.exec(text)) !== null) {
-    // Add text before the bold part
-    if (match.index > currentIndex) {
-      parts.push(text.slice(currentIndex, match.index));
+
+  // Split by lines first to handle line breaks
+  const lines = text.split('\n');
+
+  lines.forEach((line, lineIndex) => {
+    if (lineIndex > 0) {
+      // Add line break between lines
+      parts.push(React.createElement('br', { key: `br-${lineIndex}` }));
     }
-    
-    // Add the bold part
-    parts.push(React.createElement('strong', { 
-      key: `bold-${match.index}`,
-      className: 'text-indigo-400' 
-    }, match[1]));
-    
-    currentIndex = match.index + match[0].length;
-  }
-  
-  // Add remaining text
-  if (currentIndex < text.length) {
-    parts.push(text.slice(currentIndex));
-  }
-  
+
+    let currentIndex = 0;
+
+    // Find all **bold** patterns in this line
+    const boldRegex = /\*\*(.*?)\*\*/g;
+    let match;
+
+    while ((match = boldRegex.exec(line)) !== null) {
+      // Add text before the bold part
+      if (match.index > currentIndex) {
+        const textBefore = line.slice(currentIndex, match.index);
+        if (textBefore) {
+          parts.push(textBefore);
+        }
+      }
+
+      // Add the bold part
+      parts.push(React.createElement('strong', {
+        key: `bold-${lineIndex}-${match.index}`,
+        className: 'text-indigo-400 font-semibold'
+      }, match[1]));
+
+      currentIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text in this line
+    if (currentIndex < line.length) {
+      const remainingText = line.slice(currentIndex);
+      if (remainingText) {
+        parts.push(remainingText);
+      }
+    }
+  });
+
   return parts;
 }

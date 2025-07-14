@@ -5,16 +5,16 @@ export const PROMPT_MODES: SettingOption[] = [
     {
         value: 'Lite',
         label: 'Lite',
-        description: `**Output:** A concise, direct instruction.\n**Example:** "Act as a Python expert and refactor this code for readability."`
+        description: `**Quick & Direct**\nConcise instruction ready to use.\n**Example:** "Act as a Python expert and refactor this code for readability."`
     },
     {
         value: 'Pro',
         label: 'Pro',
-        description: `**Output:** A balanced, professional prompt.\n**Example:** Defines Persona, Goal, Context, and Instructions.`
+        description: `**Balanced & Professional**\nStructured with Persona, Goal, Context, and Instructions.\n**Best for:** Most use cases`
     },
     {
         value: 'Architect',
         label: 'Architect',
-        description: `**Output:** An exhaustive, detailed specification.\n**Example:** Includes deep context, constraints, variables, and output formatting.`
+        description: `**Comprehensive & Detailed**\nExhaustive specification with constraints, variables, and formatting.\n**Best for:** Complex tasks`
     }
 ];

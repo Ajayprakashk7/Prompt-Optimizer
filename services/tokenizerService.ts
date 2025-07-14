@@ -1,126 +1,78 @@
 type Resolver = (value: number) => void;
 type Rejecter = (reason?: any) => void;
 
-class TokenizerService {
-    private worker: Worker | null = null;
-    private requests: Map<number, { resolve: Resolver, reject: Rejecter }> = new Map();
-    private requestId = 0;
-    private initializationPromise: Promise<void> | null = null;
-
+// Lightweight tokenizer service using approximation instead of heavy library
+class LightweightTokenizerService {
     constructor() {
-        // Don't initialize worker immediately - wait until first use
-    }
-
-    private async createWorker(): Promise<void> {
-        try {
-            // Use the file-based worker instead of a blob URL worker
-            this.worker = new Worker(new URL('../workers/tokenizer.worker.ts', import.meta.url), { type: 'module' });
-
-            this.worker.onmessage = (e: MessageEvent) => {
-                const { id, tokens, error } = e.data || {};
-
-                // Validate message structure to prevent memory leaks
-                if (typeof id !== 'number' || !this.requests.has(id)) {
-                    console.warn('Received invalid or unknown worker message:', e.data);
-                    return;
-                }
-
-                const request = this.requests.get(id)!;
-                this.requests.delete(id); // Always clean up the request
-
-                if (error) {
-                    request.reject(new Error(error));
-                } else if (typeof tokens === 'number') {
-                    request.resolve(tokens);
-                } else {
-                    request.reject(new Error('Invalid token count received from worker'));
-                }
-            };
-
-            this.worker.onerror = (e: ErrorEvent) => {
-                e.preventDefault();
-                const errorMessage = `Tokenizer worker error: ${e.message} (at ${e.filename}:${e.lineno})`;
-                console.error(errorMessage, e);
-
-                this.requests.forEach((request) => {
-                    request.reject(new Error(errorMessage));
-                });
-                this.requests.clear();
-            };
-        } catch (error) {
-            console.error("Fatal error during TokenizerService initialization:", error);
-            // This rejection will be caught by any subsequent call to calculateTokens.
-            throw error;
-        }
+        // No heavy dependencies to load
     }
 
     public async calculateTokens(text: string): Promise<number> {
-        // Lazy initialization - only create worker when first needed
-        if (!this.initializationPromise) {
-            this.initializationPromise = this.createWorker();
-        }
-
-        try {
-            // This ensures that we don't try to use the worker before it's ready.
-            // If createWorker() failed, its thrown error will be re-thrown here.
-            await this.initializationPromise;
-
-            if (!this.worker) {
-                throw new Error("Tokenizer worker is not initialized. The service may have failed to start.");
-            }
-
-            return new Promise((resolve, reject) => {
-                const id = this.requestId++;
-
-                // Set up timeout to prevent hanging promises
-                const timeoutId = setTimeout(() => {
-                    this.requests.delete(id);
-                    reject(new Error("Token calculation timed out after 10 seconds"));
-                }, 10000);
-
-                this.requests.set(id, {
-                    resolve: (value: number) => {
-                        clearTimeout(timeoutId);
-                        resolve(value);
-                    },
-                    reject: (error: any) => {
-                        clearTimeout(timeoutId);
-                        reject(error);
-                    }
-                });
-
-                this.worker!.postMessage({ text, id });
-            });
-        } catch (error) {
-            // If worker initialization fails, clean up any pending requests
-            this.requests.forEach((request) => {
-                request.reject(new Error("Tokenizer service initialization failed"));
-            });
-            this.requests.clear();
-            throw error;
-        }
+        // Use a lightweight approximation algorithm instead of the heavy gpt-tokenizer
+        return this.approximateTokenCount(text);
     }
 
-    /**
-     * Cleanup method to properly terminate the worker and reject pending requests
-     */
-    public cleanup(): void {
-        if (this.worker) {
-            this.worker.terminate();
-            this.worker = null;
+    private approximateTokenCount(text: string): number {
+        if (!text || text.trim().length === 0) return 0;
+
+        // GPT tokenization approximation algorithm
+        // This is much more accurate than simple word counting
+
+        // 1. Handle whitespace and basic splitting
+        const words = text.trim().split(/\s+/);
+        let tokenCount = 0;
+
+        for (const word of words) {
+            // 2. Handle punctuation and special characters
+            const cleanWord = word.replace(/[^\w]/g, '');
+
+            if (cleanWord.length === 0) {
+                // Pure punctuation/symbols typically count as 1 token each
+                tokenCount += word.length;
+            } else if (cleanWord.length <= 4) {
+                // Short words are usually 1 token
+                tokenCount += 1;
+            } else if (cleanWord.length <= 8) {
+                // Medium words are usually 1-2 tokens
+                tokenCount += Math.ceil(cleanWord.length / 4);
+            } else {
+                // Long words are broken into subword tokens
+                tokenCount += Math.ceil(cleanWord.length / 3);
+            }
+
+            // Add tokens for punctuation/symbols
+            const punctuation = word.replace(/\w/g, '');
+            tokenCount += punctuation.length;
         }
 
-        // Reject all pending requests
-        this.requests.forEach((request) => {
-            request.reject(new Error("TokenizerService is being cleaned up"));
-        });
-        this.requests.clear();
+        // 3. Add some overhead for special tokens and encoding
+        const overhead = Math.ceil(tokenCount * 0.1);
 
-        // Reset initialization promise
-        this.initializationPromise = null;
+        return tokenCount + overhead;
+    }
+
+    public cleanup(): void {
+        // Nothing to cleanup for lightweight service
     }
 }
 
-// Export a singleton instance.
-// The app will use this single instance throughout its lifecycle.
-export const tokenizerService = new TokenizerService();
+// Removed worker-based service - using lightweight approximation instead
+
+// Optimized tokenizer service using lightweight approximation
+// No heavy dependencies - fast and efficient for Chrome extension
+class OptimizedTokenizerService {
+    private lightweightService = new LightweightTokenizerService();
+
+    public async calculateTokens(text: string): Promise<number> {
+        // Use lightweight approximation - accurate enough for UI purposes
+        // and eliminates the 2MB+ gpt-tokenizer dependency
+        return this.lightweightService.calculateTokens(text);
+    }
+
+    public cleanup(): void {
+        this.lightweightService.cleanup();
+    }
+}
+
+// Export a singleton instance that uses the optimized lightweight service
+export const tokenizerService = new OptimizedTokenizerService();

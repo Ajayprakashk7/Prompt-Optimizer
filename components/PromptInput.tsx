@@ -82,16 +82,7 @@ export const PromptInput: React.FC<PromptInputProps> = React.memo(({ value, onCh
     setTimeout(() => setIsRefreshing(false), 300);
   }, [starters.length]);
 
-  // Auto-cycle examples every 8 seconds
-  useEffect(() => {
-    const starterInterval = setInterval(() => {
-      setCurrentStarterIndex(prev => (prev + 1) % starters.length);
-    }, 8000);
-
-    return () => {
-      clearInterval(starterInterval);
-    };
-  }, [starters.length]);
+  // Removed auto-cycling as per user preference for static UI elements
 
   // Memoize the visible starter to prevent unnecessary re-renders
   const visibleStarter = useMemo(() => starters[currentStarterIndex], [starters, currentStarterIndex]);

@@ -194,18 +194,53 @@ export const PromptOutput: React.FC<PromptOutputProps> = React.memo(({
       return () => { isMounted = false; };
   }, [prompt, isLoading]);
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (prompt) {
-      navigator.clipboard.writeText(prompt);
-      setCopied(true);
+      try {
+        await navigator.clipboard.writeText(prompt);
+        setCopied(true);
+      } catch (error) {
+        console.error('Failed to copy to clipboard:', error);
+        // Fallback: try using the legacy method
+        try {
+          const textArea = document.createElement('textarea');
+          textArea.value = prompt;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          setCopied(true);
+        } catch (fallbackError) {
+          console.error('Fallback copy method also failed:', fallbackError);
+          // Don't set copied to true if both methods fail
+        }
+      }
     }
   };
-  
-  const handleCopyAsText = () => {
+
+  const handleCopyAsText = async () => {
     if (prompt) {
-      const plainText = stripMarkdown(prompt);
-      navigator.clipboard.writeText(plainText);
-      setCopiedText(true);
+      try {
+        const plainText = stripMarkdown(prompt);
+        await navigator.clipboard.writeText(plainText);
+        setCopiedText(true);
+      } catch (error) {
+        console.error('Failed to copy text to clipboard:', error);
+        // Fallback: try using the legacy method
+        try {
+          const plainText = stripMarkdown(prompt);
+          const textArea = document.createElement('textarea');
+          textArea.value = plainText;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          setCopiedText(true);
+        } catch (fallbackError) {
+          console.error('Fallback copy method also failed:', fallbackError);
+          // Don't set copiedText to true if both methods fail
+        }
+      }
     }
   };
 

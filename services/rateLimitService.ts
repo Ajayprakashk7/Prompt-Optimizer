@@ -75,3 +75,64 @@ export const getRemainingRequests = async (): Promise<number> => {
     const remaining = DAILY_RATE_LIMIT - usage.count;
     return Math.max(0, remaining);
 };
+
+/**
+ * Gets detailed rate limit information including reset time
+ * @returns Rate limit status with reset information
+ */
+export const getRateLimitStatus = async (): Promise<{
+    isLimited: boolean;
+    remaining: number;
+    total: number;
+    resetTime: Date;
+    hoursUntilReset: number;
+}> => {
+    const usage = await getUsage();
+    const isLimited = usage.count >= DAILY_RATE_LIMIT;
+    const remaining = Math.max(0, DAILY_RATE_LIMIT - usage.count);
+
+    // Calculate reset time (next midnight)
+    const resetTime = new Date();
+    resetTime.setHours(24, 0, 0, 0);
+
+    const hoursUntilReset = Math.ceil((resetTime.getTime() - Date.now()) / (1000 * 60 * 60));
+
+    return {
+        isLimited,
+        remaining,
+        total: DAILY_RATE_LIMIT,
+        resetTime,
+        hoursUntilReset
+    };
+};
+
+/**
+ * Enhanced rate limit error with helpful information
+ */
+export class RateLimitError extends Error {
+    constructor(message: string, public resetTime?: Date, public remaining?: number) {
+        super(message);
+        this.name = 'RateLimitError';
+    }
+}
+
+/**
+ * Checks and reserves a rate limit slot, throwing detailed error if exceeded
+ * @throws RateLimitError with helpful information
+ */
+export const checkAndReserveRateLimit = async (): Promise<void> => {
+    const status = await getRateLimitStatus();
+
+    if (status.isLimited) {
+        throw new RateLimitError(
+            `Daily limit of ${status.total} requests exceeded. ` +
+            `Limit resets in ${status.hoursUntilReset} hours. ` +
+            `Consider using your own API key for unlimited access.`,
+            status.resetTime,
+            status.remaining
+        );
+    }
+
+    // Reserve the slot
+    await recordRequest();
+};

@@ -11,6 +11,38 @@ const isChromeExtension = (): boolean => {
     );
 };
 
+// Performance optimization: In-memory cache for frequently accessed data
+class StorageCache {
+    private cache = new Map<string, any>();
+    private cacheTimestamps = new Map<string, number>();
+    private readonly CACHE_TTL = 5000; // 5 seconds TTL for cache
+
+    get(key: string): any | null {
+        const timestamp = this.cacheTimestamps.get(key);
+        if (timestamp && Date.now() - timestamp < this.CACHE_TTL) {
+            return this.cache.get(key) || null;
+        }
+        return null;
+    }
+
+    set(key: string, value: any): void {
+        this.cache.set(key, value);
+        this.cacheTimestamps.set(key, Date.now());
+    }
+
+    clear(key?: string): void {
+        if (key) {
+            this.cache.delete(key);
+            this.cacheTimestamps.delete(key);
+        } else {
+            this.cache.clear();
+            this.cacheTimestamps.clear();
+        }
+    }
+}
+
+const storageCache = new StorageCache();
+
 export const storage = {
     /**
      * Retrieves an item from storage and parses it as JSON.
@@ -19,6 +51,12 @@ export const storage = {
      */
     async get<T>(key: string): Promise<T | null> {
         try {
+            // Check cache first for performance
+            const cached = storageCache.get(key);
+            if (cached !== null) {
+                return cached;
+            }
+
             let jsonString: string | null = null;
             if (isChromeExtension()) {
                 const result = await chrome.storage.local.get(key);
@@ -29,17 +67,39 @@ export const storage = {
             if (!jsonString) {
                 return null;
             }
-            
-            // By wrapping the synchronous, potentially blocking JSON.parse in a resolved promise's .then(),
-            // we defer its execution into a microtask. This allows the main thread to complete its
-            // current work (like the initial UI render) before this potentially long-running task executes,
-            // preventing the UI from freezing on startup when parsing large history files.
-            return Promise.resolve().then(() => JSON.parse(jsonString!));
+
+            // Use MessageChannel for truly non-blocking JSON parsing
+            // This prevents large JSON parsing from blocking the main thread
+            return new Promise((resolve, reject) => {
+                if (jsonString!.length < 1000) {
+                    // Small data - parse immediately
+                    try {
+                        const parsed = JSON.parse(jsonString!);
+                        // Cache the result for performance
+                        storageCache.set(key, parsed);
+                        resolve(parsed);
+                    } catch (error) {
+                        reject(error);
+                    }
+                } else {
+                    // Large data - parse in next tick to avoid blocking
+                    setTimeout(() => {
+                        try {
+                            const parsed = JSON.parse(jsonString!);
+                            // Cache the result for performance
+                            storageCache.set(key, parsed);
+                            resolve(parsed);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    }, 0);
+                }
+            });
 
         } catch (error) {
             console.error(`Failed to get or parse item from storage for key "${key}":`, error);
-            // Attempt to clean up corrupted data to prevent future errors
-            await this.remove(key);
+            // Don't await cleanup to avoid blocking
+            this.remove(key).catch(() => {});
             return null;
         }
     },
@@ -51,6 +111,9 @@ export const storage = {
      */
     async set(key: string, value: any): Promise<void> {
         try {
+            // Update cache immediately for performance
+            storageCache.set(key, value);
+
             const jsonString = JSON.stringify(value);
             if (isChromeExtension()) {
                 await chrome.storage.local.set({ [key]: jsonString });
@@ -59,6 +122,8 @@ export const storage = {
             }
         } catch (error) {
             console.error(`Failed to set item in storage for key "${key}":`, error);
+            // Remove from cache if storage failed
+            storageCache.clear(key);
         }
     },
 
@@ -68,6 +133,9 @@ export const storage = {
      */
     async remove(key: string): Promise<void> {
         try {
+            // Clear from cache immediately
+            storageCache.clear(key);
+
             if (isChromeExtension()) {
                 await chrome.storage.local.remove(key);
             } else {

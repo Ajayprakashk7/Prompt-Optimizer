@@ -1,8 +1,9 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+// Lazy import Google AI to avoid blocking startup
 import { META_PROMPT_ENGINE } from '../constants';
 import * as configService from './configService';
 import * as rateLimitService from './rateLimitService';
+import { fewShotLearningService } from './fewShotLearningService';
 
 /**
  * A custom error to indicate that the user has hit the daily free tier rate limit.
@@ -18,6 +19,8 @@ const model = "gemini-2.5-flash";
 
 const getClient = async () => {
     try {
+        // Lazy load Google AI only when needed
+        const { GoogleGenAI } = await import("@google/genai");
         const apiKey = await configService.getActiveApiKey();
         return new GoogleGenAI({ apiKey });
     } catch (error) {
@@ -38,19 +41,16 @@ const checkAndReserveRateLimit = async () => {
     }
 };
 
-const recordUsage = async () => {
-    // Only record usage if the user is on the shared (free) key
-    const isPersonal = await configService.hasPersonalApiKey();
-    if (!isPersonal) {
-        await rateLimitService.recordRequest();
-    }
-};
+// FIXED: Removed duplicate recordUsage function to prevent double counting
+// Rate limiting is now handled only in checkAndReserveRateLimit()
 
 
 export const organizePrompt = async (prompt: string): Promise<{ title: string, category: string }> => {
     await checkAndReserveRateLimit();
+    // Lazy load Type enum when needed
+    const { Type } = await import("@google/genai");
     const ai = await getClient();
-    
+
     try {
         const response = await ai.models.generateContent({
             model: model,
@@ -126,14 +126,40 @@ export async function* optimizePrompt(userInput: string, mode: string): AsyncGen
     await checkAndReserveRateLimit();
     const ai = await getClient();
 
+    // Determine category for few-shot learning
+    let category = 'general';
+    try {
+        const analysis = await analyzePrompt(userInput);
+        category = analysis.category.toLowerCase().replace(/\s+/g, '_');
+    } catch (error) {
+        console.warn('Failed to analyze prompt for category, using general:', error);
+    }
+
+    // Generate few-shot enhanced prompt
+    const fewShotPrompt = fewShotLearningService.generateFewShotPrompt(
+        userInput,
+        category,
+        { maxExamples: mode === 'Architect' ? 3 : mode === 'Pro' ? 2 : 1 }
+    );
+
     const userRequest = `
 ## USER'S RAW PROMPT:
 \`\`\`
 ${userInput}
 \`\`\`
 
+## FEW-SHOT ENHANCED PROMPT:
+\`\`\`
+${fewShotPrompt}
+\`\`\`
+
 ## REQUESTED MODE:
 ${mode}
+
+## ADDITIONAL CONTEXT:
+- Category: ${category}
+- Few-shot examples included: ${fewShotPrompt !== userInput ? 'Yes' : 'No'}
+- Use the few-shot examples as patterns for creating an even better optimized prompt
     `;
 
     const fullPrompt = `${META_PROMPT_ENGINE}\n\n${userRequest.trim()}`;
@@ -143,7 +169,7 @@ ${mode}
             model: model,
             contents: fullPrompt,
         });
-        
+
         let fullResponse = '';
         for await (const chunk of response) {
             const text = chunk.text;
@@ -158,6 +184,24 @@ ${mode}
 
     } catch (error) {
         console.error("An unexpected error occurred while optimizing the prompt:", error);
-        throw new Error(`Failed to optimize prompt: ${error instanceof Error ? error.message : String(error)}`);
+
+        // Enhanced error handling with user-friendly messages
+        if (error instanceof Error) {
+            if (error.message.includes('API key')) {
+                throw new Error('Invalid API key. Please check your Google AI API key in settings.');
+            }
+            if (error.message.includes('quota') || error.message.includes('rate limit')) {
+                throw new Error('API quota exceeded. Please wait a moment before trying again or check your usage limits.');
+            }
+            if (error.message.includes('network') || error.message.includes('fetch')) {
+                throw new Error('Network connection failed. Please check your internet connection and try again.');
+            }
+            if (error.message.includes('timeout')) {
+                throw new Error('Request timed out. The AI service may be busy. Please try again.');
+            }
+            throw new Error(`Optimization failed: ${error.message}`);
+        }
+
+        throw new Error('An unexpected error occurred. Please try again or contact support if the issue persists.');
     }
 };

@@ -13,22 +13,32 @@ import { importPromptHistory } from './services/exportService';
 import { interpolateVariables } from './utils/promptUtils';
 import { getRemainingRequests } from './services/rateLimitService';
 import { hasPersonalApiKey } from './services/configService';
+import { RuntimePerformanceMonitor, MemoryOptimizer } from './utils/bundleOptimization';
+import { FastStartupWrapper } from './components/LoadingSkeleton';
+import { startupTracker, optimizeStartup } from './utils/startupOptimizer';
+import { useSmartPreload } from './hooks/useLazyLoad';
+import { advancedCache } from './utils/advancedCache';
+import ErrorBoundary from './components/ErrorBoundary';
+import OfflineDetector from './components/OfflineDetector';
 
+// Critical components - loaded immediately for fast first paint
 import { Header } from './components/Header';
 import { PromptInput } from './components/PromptInput';
 import { PromptOutput } from './components/PromptOutput';
 import { Loader } from './components/Loader';
-import { RocketLaunchIcon } from './components/Icons';
 import { Footer } from './components/Footer';
-import { EXAMPLE_PROMPTS, PROMPT_MODES } from './constants';
 import { ModeSelector } from './components/ModeSelector';
 import { usePersistentState } from './hooks/usePersistentState';
-import { VariableEditor } from './components/VariableEditor';
 
-// Lazy load heavy components that aren't needed immediately
+// Optimized imports - only import what's needed
+import { RocketLaunchIcon } from './components/Icons';
+import { EXAMPLE_PROMPTS, PROMPT_MODES } from './constants';
+
+// Lazy load ALL non-critical components for maximum performance
 const HistoryPanel = lazy(() => import('./components/HistoryPanel').then(m => ({ default: m.HistoryPanel })));
 const OptimizationHistoryPanel = lazy(() => import('./components/OptimizationHistoryPanel').then(m => ({ default: m.OptimizationHistoryPanel })));
 const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
+const VariableEditor = lazy(() => import('./components/VariableEditor').then(m => ({ default: m.VariableEditor })));
 
 
 const App: React.FC = () => {
@@ -37,9 +47,38 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAppReady, setIsAppReady] = useState(false);
 
   const [promptMode, setPromptMode] = usePersistentState('promptMode', PROMPT_MODES[1].value); // Default to 'Pro'
   const [variables, setVariables] = usePersistentState<Record<string, string>>('variables', {});
+
+  // Smart preloading based on user behavior
+  const { shouldPreloadPanels, shouldPreloadSettings } = useSmartPreload();
+
+  // Initialize performance monitoring and fast startup
+  useEffect(() => {
+    const monitor = RuntimePerformanceMonitor.getInstance();
+    monitor.recordMetric('appMount', performance.now());
+
+    // Track startup milestones
+    startupTracker.recordMilestone('App Mount');
+
+    // Mark app as ready immediately for fast UI display
+    setIsAppReady(true);
+    startupTracker.recordMilestone('First Paint');
+
+    // Validate performance targets
+    optimizeStartup.defer(() => {
+      startupTracker.recordMilestone('Interactive');
+      startupTracker.validatePerformance();
+    }, 100);
+
+    // Cleanup on unmount
+    return () => {
+      MemoryOptimizer.cleanup();
+      advancedCache.cleanup();
+    };
+  }, []);
 
   const [savedPrompts, setSavedPrompts] = useState<SavedPrompt[]>([]);
   const [optimizationHistory, setOptimizationHistory] = useState<OptimizationHistoryEntry[]>([]);
@@ -55,40 +94,80 @@ const App: React.FC = () => {
   const [remainingRequests, setRemainingRequests] = useState(0);
 
   useEffect(() => {
-    // Defer loading of history data to improve initial render performance
+    // Critical: Defer ALL non-essential data loading to prevent blocking startup
     const loadInitialData = async () => {
-        // Use requestIdleCallback for better performance
+        // Load data in background after UI is ready
         const loadData = async () => {
-            const [prompts, optHistory] = await Promise.all([
-                getHistory(),
-                getOptimizationHistory(),
-            ]);
-            setSavedPrompts(prompts);
-            setOptimizationHistory(optHistory);
+            try {
+                // Load data progressively to avoid blocking
+                const prompts = await getHistory();
+                setSavedPrompts(prompts);
+                startupTracker.recordMilestone('History Loaded');
+
+                // Load optimization history separately to avoid blocking
+                setTimeout(async () => {
+                    const optHistory = await getOptimizationHistory();
+                    setOptimizationHistory(optHistory);
+                    startupTracker.recordMilestone('Data Loaded');
+                }, 100);
+            } catch (error) {
+                console.warn('Failed to load initial data:', error);
+                // Don't block UI for data loading errors
+            }
         };
 
+        // Use multiple strategies to ensure non-blocking load
         if ('requestIdleCallback' in window) {
-            requestIdleCallback(loadData);
+            requestIdleCallback(loadData, { timeout: 1000 });
         } else {
-            // Fallback for browsers without requestIdleCallback
-            setTimeout(loadData, 0);
+            // Delay to ensure UI renders first
+            setTimeout(loadData, 50);
         }
     };
 
     loadInitialData();
   }, []);
 
+  // Preload heavy components based on user behavior
+  useEffect(() => {
+    if (shouldPreloadPanels) {
+      // Preload panels when user shows engagement
+      import('./components/HistoryPanel').catch(() => {});
+      import('./components/OptimizationHistoryPanel').catch(() => {});
+    }
+
+    if (shouldPreloadSettings) {
+      // Preload settings modal after delay
+      import('./components/SettingsModal').catch(() => {});
+    }
+  }, [shouldPreloadPanels, shouldPreloadSettings]);
+
   // This effect will run on mount and whenever an API call completes or the key is changed.
   useEffect(() => {
+    // CRITICAL FIX: Make usage data loading completely non-blocking
     const refreshUsageData = async () => {
-        const [hasKey, remRequests] = await Promise.all([
-            hasPersonalApiKey(),
-            getRemainingRequests(),
-        ]);
-        setHasPersonalKey(hasKey);
-        setRemainingRequests(remRequests);
+        try {
+            const [hasKey, remRequests] = await Promise.all([
+                hasPersonalApiKey(),
+                getRemainingRequests(),
+            ]);
+            setHasPersonalKey(hasKey);
+            setRemainingRequests(remRequests);
+        } catch (error) {
+            console.warn('Failed to load usage data:', error);
+            // Set defaults to prevent UI blocking
+            setHasPersonalKey(false);
+            setRemainingRequests(0);
+        }
     };
-    refreshUsageData();
+
+    // Use requestIdleCallback to ensure this doesn't block startup
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(refreshUsageData, { timeout: 2000 });
+    } else {
+        // Delay significantly to ensure UI renders first
+        setTimeout(refreshUsageData, 200);
+    }
   }, [appVersion]);
 
 
@@ -305,29 +384,30 @@ const App: React.FC = () => {
   }, [error, setUserInput]);
 
   return (
-    <div className="extension-container bg-zinc-950">
-      <Header
-        onHistoryClick={onHistoryClick}
-        onOptimizationHistoryClick={onOptimizationHistoryClick}
-        onSettingsClick={onSettingsClick}
-        hasPersonalKey={hasPersonalKey}
-        remainingRequests={remainingRequests}
-      />
+    <FastStartupWrapper isLoading={!isAppReady}>
+      <div className="extension-container bg-zinc-950">
+        <Header
+          onHistoryClick={onHistoryClick}
+          onOptimizationHistoryClick={onOptimizationHistoryClick}
+          onSettingsClick={onSettingsClick}
+          hasPersonalKey={hasPersonalKey}
+          remainingRequests={remainingRequests}
+        />
 
-      <main className="extension-main">
-        <div className="responsive-grid">
-          {/* Left Column */}
-          <div className="responsive-column">
-            <div className="flex flex-col flex-grow min-h-0">
-              <PromptInput
-                value={userInput}
-                onChange={handleUserInputChange}
-                placeholder="e.g., Refactor this Python function to be more efficient..."
-                starters={EXAMPLE_PROMPTS}
-                onStarterClick={(starter) => setUserInput(starter.prompt)}
-                grow={true}
-              />
-            </div>
+        <main className="extension-main">
+          <div className="responsive-grid">
+            {/* Left Column */}
+            <div className="responsive-column">
+              <div className="flex flex-col flex-grow min-h-0">
+                <PromptInput
+                  value={userInput}
+                  onChange={handleUserInputChange}
+                  placeholder="e.g., Refactor this Python function to be more efficient..."
+                  starters={EXAMPLE_PROMPTS}
+                  onStarterClick={(starter) => setUserInput(starter.prompt)}
+                  grow={true}
+                />
+              </div>
 
             <div className="flex-shrink-0 space-y-4">
               <VariableEditor
@@ -400,8 +480,20 @@ const App: React.FC = () => {
         />
       </Suspense>
 
-    </div>
+      </div>
+    </FastStartupWrapper>
   );
 };
 
-export default App;
+// Wrap the main App with error boundary and offline detection
+const AppWithErrorHandling = () => {
+  return (
+    <ErrorBoundary>
+      <OfflineDetector>
+        <App />
+      </OfflineDetector>
+    </ErrorBoundary>
+  );
+};
+
+export default AppWithErrorHandling;

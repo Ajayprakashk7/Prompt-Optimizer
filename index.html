@@ -8,19 +8,60 @@
     <meta name="color-scheme" content="dark" />
     <title>Prompt Optimizer</title>
 
-    <!-- DNS prefetch for external resources -->
+    <!-- Performance optimizations -->
     <link rel="dns-prefetch" href="//generativelanguage.googleapis.com" />
+    <link rel="preconnect" href="//generativelanguage.googleapis.com" crossorigin />
 
-    <!-- Responsive design support -->
+    <!-- Resource hints for faster loading -->
+    <meta name="theme-color" content="#09090b" />
+    <meta name="msapplication-navbutton-color" content="#09090b" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Critical CSS for instant rendering -->
     <style>
       /* Prevent layout shift during load */
-      html { font-size: 14px; }
+      html {
+        font-size: 14px;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
       @media (min-width: 480px) { html { font-size: 15px; } }
       @media (min-width: 768px) { html { font-size: 16px; } }
 
       /* High DPI support */
       @media (-webkit-min-device-pixel-ratio: 2) {
         html { font-size: 15px; }
+      }
+
+      /* Critical: Prevent any flash of unstyled content */
+      #root {
+        min-height: 100vh;
+        background-color: #09090b; /* zinc-950 */
+        color: #d4d4d8; /* zinc-300 */
+        width: 800px;
+        height: 600px;
+        overflow: hidden;
+      }
+
+      /* Critical layout styles for instant rendering */
+      .extension-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background-color: #09090b;
+      }
+
+      /* Loading skeleton styles for instant feedback */
+      .loading-skeleton {
+        background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+      }
+
+      @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
       }
     </style>
   </head>
