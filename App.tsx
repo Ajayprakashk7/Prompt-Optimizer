@@ -20,6 +20,7 @@ import { useSmartPreload } from './hooks/useLazyLoad';
 import { advancedCache } from './utils/advancedCache';
 import ErrorBoundary from './components/ErrorBoundary';
 import OfflineDetector from './components/OfflineDetector';
+import { PromptTemplateSystem } from './components/PromptTemplateSystem';
 
 // Critical components - loaded immediately for fast first paint
 import { Header } from './components/Header';
@@ -51,6 +52,8 @@ const App: React.FC = () => {
 
   const [promptMode, setPromptMode] = usePersistentState('promptMode', PROMPT_MODES[1].value); // Default to 'Pro'
   const [variables, setVariables] = usePersistentState<Record<string, string>>('variables', {});
+
+  const [showPromptTemplateSystem, setShowPromptTemplateSystem] = useState(false);
 
   // Smart preloading based on user behavior
   const { shouldPreloadPanels, shouldPreloadSettings } = useSmartPreload();
@@ -385,7 +388,32 @@ const App: React.FC = () => {
 
   return (
     <FastStartupWrapper isLoading={!isAppReady}>
-      <div className="extension-container bg-zinc-950">
+      <div className="flex flex-col min-h-screen bg-zinc-900">
+        {/* Add a button to open the Advanced Prompt Template System */}
+        <div className="fixed top-4 right-4 z-50">
+          <button
+            className="bg-indigo-700 text-white px-4 py-2 rounded-lg shadow hover:bg-indigo-600 font-semibold"
+            onClick={() => setShowPromptTemplateSystem(true)}
+            aria-label="Open Advanced Prompt Template System"
+          >
+            Advanced Prompt Template System
+          </button>
+        </div>
+        {/* Show the advanced system as a modal overlay */}
+        {showPromptTemplateSystem && (
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
+            <div className="relative w-[90vw] h-[90vh] bg-zinc-950 rounded-lg shadow-2xl overflow-hidden flex flex-col">
+              <button
+                className="absolute top-4 right-4 z-10 bg-zinc-800 text-zinc-200 rounded-full p-2 hover:bg-zinc-700 focus:outline-none"
+                onClick={() => setShowPromptTemplateSystem(false)}
+                aria-label="Close Advanced Prompt Template System"
+              >
+                ✕
+              </button>
+              <PromptTemplateSystem />
+            </div>
+          </div>
+        )}
         <Header
           onHistoryClick={onHistoryClick}
           onOptimizationHistoryClick={onOptimizationHistoryClick}
