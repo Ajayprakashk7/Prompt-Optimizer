@@ -50,7 +50,7 @@ const StatsCounter: React.FC<{ text: string }> = ({ text }) => {
     }, [debouncedText]);
 
     return (
-        <div className="text-xs text-zinc-500 space-x-2">
+        <div className="text-xs text-zinc-500 space-x-2 glass-text-subtle">
             <span>{tokenCount === null ? '--' : tokenCount} tokens</span>
             <span className="text-zinc-600">/</span>
             <span>{wordCount} words</span>
@@ -95,7 +95,7 @@ export const PromptInput: React.FC<PromptInputProps> = React.memo(({ value, onCh
   return (
     <div className={`flex flex-col gap-2 ${grow ? 'flex-grow h-full' : ''}`}>
         <div className="flex justify-between items-center">
-             <label htmlFor="prompt-input" className="text-sm font-medium text-zinc-300">
+             <label htmlFor="prompt-input" className="text-sm font-medium glass-text">
                 Your Raw Prompt
              </label>
             <StatsCounter text={value} />
@@ -105,7 +105,7 @@ export const PromptInput: React.FC<PromptInputProps> = React.memo(({ value, onCh
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className={`w-full bg-zinc-900/50 border border-zinc-700 text-high-contrast rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none ${grow ? 'flex-grow min-h-0' : ''}`}
+        className={`w-full glass-input text-high-contrast resize-none ${grow ? 'flex-grow min-h-0' : ''}`}
         style={{
           padding: 'var(--space-3)',
           fontSize: 'var(--text-sm)',
@@ -114,14 +114,14 @@ export const PromptInput: React.FC<PromptInputProps> = React.memo(({ value, onCh
         }}
       />
       <div className="flex items-center gap-2 text-zinc-400" style={{ fontSize: 'var(--text-xs)' }}>
-        <span className="text-zinc-400">
+        <span className="text-zinc-400 glass-text-subtle">
           Example:
         </span>
         {visibleStarter && (
           <button
             key={visibleStarter.title}
             onClick={handleStarterClick}
-            className="px-2 py-1 bg-zinc-800 rounded-md hover:bg-zinc-700 hover:text-zinc-100 transition-all duration-200 text-zinc-300 hover:scale-105"
+            className="px-2 py-1 glass-card hover:glass-hover rounded-md transition-all duration-200 text-zinc-300 hover:scale-105 glass-text"
             style={{
               fontSize: 'var(--text-xs)',
               animation: 'fadeSlideIn 0.3s ease-out'
@@ -132,7 +132,7 @@ export const PromptInput: React.FC<PromptInputProps> = React.memo(({ value, onCh
         )}
         <button
           onClick={shuffleStarters}
-          className={`p-1.5 bg-zinc-800 rounded-md hover:bg-zinc-700 hover:text-zinc-100 transition-all duration-200 text-zinc-400 hover:scale-110 ${isRefreshing ? 'animate-spin' : ''}`}
+          className={`p-1.5 glass-card hover:glass-hover rounded-md transition-all duration-200 text-zinc-400 hover:scale-110 ${isRefreshing ? 'animate-spin' : ''}`}
           style={{ fontSize: 'var(--text-xs)' }}
           title="Get a new example"
         >
