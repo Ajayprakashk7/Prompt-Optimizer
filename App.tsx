@@ -385,7 +385,7 @@ const App: React.FC = () => {
 
   return (
     <FastStartupWrapper isLoading={!isAppReady}>
-      <div className="extension-container bg-zinc-950">
+      <div className="extension-container">
         <Header
           onHistoryClick={onHistoryClick}
           onOptimizationHistoryClick={onOptimizationHistoryClick}
@@ -425,7 +425,7 @@ const App: React.FC = () => {
               <button
                 onClick={handleOptimize}
                 disabled={isLoading}
-                className="touch-target w-full bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                className="touch-target w-full glass-button text-white font-semibold rounded-lg hover:glass-hover transition-all disabled:opacity-50 disabled:cursor-wait"
                 style={{ fontSize: 'var(--text-xs)', padding: 'var(--space-2) var(--space-3)' }}
               >
                 <span className="flex items-center justify-center gap-2">

@@ -98,11 +98,11 @@ export const VariableEditor: React.FC<VariableEditorProps> = React.memo(({ promp
     );
 
     return (
-        <div className="border border-zinc-700 rounded-lg overflow-hidden">
+        <div className="glass-panel rounded-lg overflow-hidden">
             {/* Collapsible Header - Compact */}
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full flex items-center justify-between p-2 bg-zinc-800/50 hover:bg-zinc-800/70 transition-colors text-left"
+                className="w-full flex items-center justify-between p-2 hover:glass-hover transition-all text-left"
             >
                 <div className="flex items-center gap-1.5">
                     {isExpanded ? (
@@ -110,7 +110,7 @@ export const VariableEditor: React.FC<VariableEditorProps> = React.memo(({ promp
                     ) : (
                         <ChevronRightIcon className="w-3 h-3 text-zinc-400" />
                     )}
-                    <span className="text-xs font-medium text-zinc-200">
+                    <span className="text-xs font-medium glass-text">
                         Variables {detectedVars.length > 0 && `(${detectedVars.length})`}
                     </span>
                 </div>
@@ -119,13 +119,13 @@ export const VariableEditor: React.FC<VariableEditorProps> = React.memo(({ promp
                         {detectedVars.slice(0, 2).map(varName => (
                             <span
                                 key={varName}
-                                className="px-1.5 py-0.5 text-xs bg-indigo-600/20 text-indigo-300 rounded"
+                                className="px-1.5 py-0.5 text-xs glass-highlight text-indigo-300 rounded"
                             >
                                 {varName}
                             </span>
                         ))}
                         {detectedVars.length > 2 && (
-                            <span className="px-1.5 py-0.5 text-xs bg-zinc-600/20 text-zinc-400 rounded">
+                            <span className="px-1.5 py-0.5 text-xs glass-highlight text-zinc-400 rounded">
                                 +{detectedVars.length - 2}
                             </span>
                         )}
@@ -135,7 +135,7 @@ export const VariableEditor: React.FC<VariableEditorProps> = React.memo(({ promp
 
             {/* Expandable Content - Compact & Scrollable */}
             {isExpanded && (
-                <div className="max-h-32 overflow-y-auto bg-zinc-900/30">
+                <div className="max-h-32 overflow-y-auto glass-panel">
                     <div className="p-2 space-y-2">
                         {/* Detected Variables - Inline Layout */}
                         {detectedVars.map(varName => (
@@ -148,7 +148,7 @@ export const VariableEditor: React.FC<VariableEditorProps> = React.memo(({ promp
                                     value={variables[varName] || ''}
                                     onChange={(e) => handleInputChange(varName, e.target.value)}
                                     placeholder="value..."
-                                    className="flex-1 bg-zinc-800 border border-zinc-600 text-zinc-200 rounded px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="flex-1 glass-input text-zinc-200 rounded px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                                 />
                             </div>
                         ))}
@@ -164,11 +164,11 @@ export const VariableEditor: React.FC<VariableEditorProps> = React.memo(({ promp
                                     value={value}
                                     onChange={(e) => handleInputChange(varName, e.target.value)}
                                     placeholder="value..."
-                                    className="flex-1 bg-zinc-800 border border-zinc-600 text-zinc-200 rounded px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="flex-1 glass-input text-zinc-200 rounded px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                                 />
                                 <button
                                     onClick={() => handleRemoveVariable(varName)}
-                                    className="p-0.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors flex-shrink-0"
+                                    className="p-0.5 text-zinc-400 hover:text-red-400 hover:glass-hover rounded transition-colors flex-shrink-0 glass-card"
                                     title="Remove"
                                 >
                                     <XMarkIcon className="w-3 h-3" />
@@ -184,7 +184,7 @@ export const VariableEditor: React.FC<VariableEditorProps> = React.memo(({ promp
                                         <button
                                             key={suggestion}
                                             onClick={() => handleAddSuggestion(suggestion)}
-                                            className="px-1.5 py-0.5 text-xs bg-zinc-700/50 text-zinc-400 rounded hover:bg-zinc-600/50 hover:text-zinc-300 transition-colors"
+                                            className="px-1.5 py-0.5 text-xs glass-card text-zinc-400 rounded hover:glass-hover hover:text-zinc-300 transition-colors"
                                         >
                                             +{suggestion}
                                         </button>

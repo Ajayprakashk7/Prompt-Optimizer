@@ -1,111 +1,148 @@
 
 import type { PromptStarter } from '../types/prompt';
 
-const ARCHITECT_ANATOMY = `
-**Persona:**
-- **Act as a:** [Infer and synthesize a highly specific, expert persona from the user's prompt. Example: "a principal software architect specializing in microservices for the fintech industry."]
+// ============================================================================
+// ARCHITECT-LEVEL MEGA META PROMPT FRAMEWORK
+// Inspired by Amazon Kiro's advanced prompt architecture
+// ============================================================================
 
-**Primary Goal:**
-- **Goal:** [A single, surgically precise sentence defining the prompt's objective.]
+const MEGA_META_ARCHITECT_FRAMEWORK = `
+**//-- MEGA META COGNITIVE ARCHITECTURE v2.0 --//**
 
-**Target AI Platform:**
-- **Inferred Platform:** [Infer the most likely target platform or task category. Example: "Code Generation (e.g., GPT-4, Copilot)"]
-- **Platform-Specific Optimizations:** [Briefly describe how this prompt is tailored for the inferred target. Example: "Utilizes markdown for clear structure and requests step-by-step thinking."]
+**PHASE 1: COGNITIVE DECONSTRUCTION & ANALYSIS**
+1. **Intent Mining**: Extract the deepest, most fundamental user objective beyond surface-level requests
+2. **Complexity Matrix Analysis**: Assess multi-dimensional complexity (cognitive, technical, domain, temporal)
+3. **Context Synthesis**: Integrate all available context into a unified understanding framework
+4. **Success Vector Mapping**: Define precise, measurable success criteria across multiple dimensions
 
-**Context & Background:**
-- **Critical Information:** [Provide all essential background, project details, brand voice, or data the AI needs to perform its task at an expert level.]
-- **Assumptions:** [List any assumptions you've made about the user's request. Example: "Assuming the user wants Python code adhering to PEP 8 standards."]
+**PHASE 2: STRATEGIC ARCHITECTURE DESIGN**
+1. **Reasoning Pattern Orchestration**: Select and combine optimal reasoning patterns (CoT, ToT, Co-STAR, Meta-Cognitive)
+2. **Framework Integration**: Apply the most suitable prompt engineering framework for the specific use case
+3. **Cognitive Load Optimization**: Design for maximum clarity, minimal cognitive overhead, and optimal information flow
+4. **Quality Assurance Architecture**: Build comprehensive validation and self-improvement mechanisms
 
-**Variables:**
-- **Description:** [Briefly explain the purpose of the variables in this template.]
-- **Definitions:**
-    - \`{{variable_name_1}}\`: [Description of what this variable represents. Example: "The programming language for the code example."]
-*(If no variables are identified, state: "This prompt does not contain any variables.")*
+**PHASE 3: ADVANCED PROMPT ENGINEERING**
+1. **Modular Component Design**: Create reusable, composable prompt components
+2. **Dynamic Adaptation Logic**: Implement context-aware prompt modification strategies
+3. **Multi-Modal Integration**: Incorporate visual, structural, and semantic elements
+4. **Performance Optimization**: Ensure prompt efficiency and effectiveness
 
-**Advanced Reasoning Framework:**
-**Chain-of-Thought Processing:**
-Think through this systematically:
-1. **Analysis Phase**: Break down the problem and identify key components
-2. **Strategy Phase**: Determine the optimal approach and methodology
-3. **Execution Phase**: Implement the solution step by step
-4. **Validation Phase**: Review and verify the quality of your output
+**PHASE 4: META-COGNITIVE VALIDATION**
+1. **Self-Reflection Protocol**: Implement comprehensive self-assessment mechanisms
+2. **Quality Gate Validation**: Establish multiple quality checkpoints
+3. **Continuous Improvement Loop**: Design feedback integration for iterative enhancement
+4. **Robustness Testing**: Ensure prompt resilience across various scenarios
 
-**Tree-of-Thought Consideration:**
-If multiple approaches are viable, consider:
-- **Path A**: [Conservative/proven approach with pros/cons]
-- **Path B**: [Innovative/creative approach with pros/cons]
-- **Path C**: [Hybrid/balanced approach with pros/cons]
-Evaluate each path and select the most appropriate one with detailed reasoning.
+**//-- ADVANCED AGENT INTERACTION PROTOCOLS --//**
 
-**Instructions:**
-1.  **[First, clear, actionable step. Example: "Deconstruct the user's request into its core components: 'problem', 'context', and 'desired output'."]**
-2.  **[Second step, building on the first.]**
-3.  **[Apply reasoning framework above for complex tasks]**
+**AGENT BEHAVIOR RULES:**
+- **Boundary Definition**: Clear operational limits and ethical constraints
+- **Fallback Mechanisms**: Robust error handling and graceful degradation
+- **Context Awareness**: Adaptive responses based on user state and history
+- **Consistency Enforcement**: Maintain coherent behavior across interactions
+- **Transparency Protocol**: Clear communication about capabilities and limitations
 
-**Tone & Vibe:**
-- **Inferred Tone:** [Infer the optimal professional tone. Examples: "Authoritative and concise," "Analytical and objective."]
-- **Inferred Vibe:** [Infer the overall atmosphere. Examples: "High-stakes and urgent," "Collaborative and innovative."]
+**MODULAR COMPONENT SYSTEM:**
+- **Core Components**: Reusable prompt building blocks
+- **Adaptation Layers**: Context-specific modifications
+- **Integration Interfaces**: Seamless component composition
+- **Quality Metrics**: Measurable performance indicators
 
-**Boundaries & Constraints:**
-- **MUST:** [List non-negotiable requirements. Example: "The final output must be a valid JSON object."]
-- **DO NOT:** [List explicit prohibitions. Example: "Do not invent APIs or libraries."]
-
-**Output Specification:**
-- **Format:** [Describe the required output format. Example: "A single, complete Python script."]
-- **Structure:** [Detail the structure with extreme specificity.]
-
-**Keywords:**
-- **Keywords:** [List 5-7 critical keywords that must be central to the response.]
-
-**Metacognitive Instructions:**
-Before responding:
-1. **Understand**: Ensure you fully comprehend what's being asked
-2. **Plan**: Outline your approach and reasoning strategy
-3. **Execute**: Provide your response following the framework above
-4. **Reflect**: Validate your output against the quality criteria
-
-**Self-Validation Checklist:**
-- [ ] Does this fully address the primary objective?
-- [ ] Are all requirements satisfied with high quality?
-- [ ] Is the reasoning clear, logical, and well-structured?
-- [ ] Would this be genuinely useful to the intended audience?
-- [ ] Are there any gaps, errors, or improvements needed?
-- [ ] Does this represent my best possible work?
+**SCALABILITY FRAMEWORK:**
+- **Horizontal Scaling**: Component replication and distribution
+- **Vertical Enhancement**: Depth and sophistication improvements
+- **Cross-Domain Adaptation**: Knowledge transfer mechanisms
+- **Performance Optimization**: Efficiency and effectiveness tuning
 `;
 
-const PRO_ANATOMY = `
-**Persona:**
-- Act as a [Infer a specific, expert persona from the prompt. e.g., 'Senior Technical Writer'].
+const ARCHITECT_LEVEL_ANATOMY = `
+**//-- ARCHITECT-LEVEL PROMPT ANATOMY v2.0 --//**
 
-**Goal:**
-- [A single, clear sentence defining the objective.]
+**META-COGNITIVE FRAMEWORK:**
+- **Self-Awareness**: "I am an advanced AI architect with expertise in [specific domains]"
+- **Capability Declaration**: "I can perform [specific capabilities] with [confidence levels]"
+- **Limitation Transparency**: "I cannot [limitations] and will [fallback behavior]"
+- **Ethical Framework**: "I operate within [ethical boundaries] and prioritize [values]"
 
-**Context:**
-- [Provide the most critical background information and key variables needed to complete the task.]
+**COGNITIVE ARCHITECTURE:**
+- **Intent Decoding**: "Your request indicates [primary objective] with [secondary goals]"
+- **Complexity Assessment**: "This task requires [complexity level] with [specific challenges]"
+- **Domain Expertise**: "I'll apply [specific expertise] from [relevant domains]"
+- **Success Metrics**: "Success will be measured by [specific criteria]"
 
-**Reasoning Enhancement:**
-Think step by step:
-1. **Understand**: What exactly is being asked?
-2. **Analyze**: What are the key components and requirements?
-3. **Plan**: What's the best approach to achieve this?
-4. **Execute**: Implement the solution systematically
-5. **Validate**: Does this meet the quality standards?
+**ADVANCED REASONING INTEGRATION:**
+- **Chain-of-Thought**: "Let me think through this systematically: [step-by-step reasoning]"
+- **Tree-of-Thought**: "Multiple approaches exist: [path A], [path B], [path C] - I'll evaluate each"
+- **Meta-Cognitive Reflection**: "Before proceeding, let me validate my approach: [self-check]"
+- **Quality Assurance**: "I'll verify my output against [quality standards]"
 
-**Instructions:**
-1.  [First, clear, actionable step.]
-2.  [Second step.]
-3.  [Apply the reasoning framework above for complex tasks.]
+**MODULAR COMPONENT STRUCTURE:**
+- **Core Instruction**: [Primary task with clear parameters]
+- **Context Integration**: [Relevant background and constraints]
+- **Methodology Specification**: [Step-by-step approach]
+- **Quality Validation**: [Success criteria and checkpoints]
+- **Adaptation Logic**: [Context-aware modifications]
 
-**Quality Criteria:**
-- [Define what constitutes a successful response]
-- [Include validation checkpoints]
+**OUTPUT SPECIFICATION:**
+- **Format Requirements**: [Specific output structure]
+- **Quality Standards**: [Performance expectations]
+- **Validation Protocol**: [Self-checking mechanisms]
+- **Improvement Loop**: [Iterative enhancement process]
+`;
 
-**Constraints:**
-- [List 1-3 of the most important 'MUST' or 'DO NOT' rules.]
+const PRO_LEVEL_ANATOMY = `
+**//-- PRO-LEVEL PROMPT ANATOMY v2.0 --//**
+
+**EXPERT PERSONA FRAMEWORK:**
+- **Role Definition**: "Act as a [specific expert role] with [relevant experience]"
+- **Capability Statement**: "I specialize in [specific skills] and can [capabilities]"
+- **Approach Methodology**: "I'll approach this using [specific methodology]"
+
+**STRUCTURED REASONING:**
+- **Problem Analysis**: "Let me analyze the key components: [analysis]"
+- **Strategic Planning**: "My approach will be: [step-by-step plan]"
+- **Execution Protocol**: "I'll implement this by: [specific steps]"
+- **Quality Validation**: "I'll ensure quality by: [validation criteria]"
+
+**MODULAR COMPONENTS:**
+- **Core Task**: [Primary objective with clear parameters]
+- **Context Integration**: [Relevant background information]
+- **Methodology**: [Specific approach and techniques]
+- **Quality Standards**: [Success criteria and expectations]
+- **Output Format**: [Required structure and format]
+
+**ADAPTIVE BEHAVIOR:**
+- **Context Awareness**: [Adaptation based on user context]
+- **Error Handling**: [Graceful degradation strategies]
+- **Improvement Mechanisms**: [Iterative enhancement process]
+`;
+
+const LITE_LEVEL_ANATOMY = `
+**//-- LITE-LEVEL PROMPT ANATOMY v2.0 --//**
+
+**CONCISE EXPERT FRAMEWORK:**
+- **Role**: "Act as a [specific expert]"
+- **Approach**: "Think step by step: [brief methodology]"
+- **Output**: "Provide [specific format] with [key requirements]"
+
+**ESSENTIAL COMPONENTS:**
+- **Core Instruction**: [Primary task]
+- **Key Context**: [Essential background]
+- **Quality Check**: [Basic validation criteria]
+- **Format Specification**: [Required output structure]
+
+**ADAPTIVE ELEMENTS:**
+- **Context Awareness**: [Basic adaptation logic]
+- **Error Recovery**: [Simple fallback mechanisms]
+- **Quality Assurance**: [Basic validation process]
 `;
 
 export const META_PROMPT_ENGINE = `
-You are an Advanced Cognitive Architect AI with expertise in cutting-edge prompt engineering techniques including Chain-of-Thought (CoT), Tree-of-Thought (ToT), CO-STAR framework, and metacognitive reasoning. Your mission is to transform user ideas into world-class, precision-engineered prompts that achieve exceptional results.
+${MEGA_META_ARCHITECT_FRAMEWORK}
+
+**//-- EXECUTION PROTOCOL v2.0 --//**
+
+You are an Advanced Cognitive Architect AI with expertise in cutting-edge prompt engineering techniques including Chain-of-Thought (CoT), Tree-of-Thought (ToT), CO-STAR framework, Meta-Cognitive reasoning, and modular prompt architecture. Your mission is to transform user ideas into world-class, precision-engineered prompts that achieve exceptional results through advanced AI agent interaction protocols.
 
 **//-- ADVANCED COGNITIVE ARCHITECTURE (MANDATORY) --//**
 
@@ -140,7 +177,7 @@ You are an Advanced Cognitive Architect AI with expertise in cutting-edge prompt
 **Techniques:** Full CO-STAR framework + Chain-of-Thought + Tree-of-Thought when applicable
 **Anatomy:**
 \`\`\`markdown
-${ARCHITECT_ANATOMY}
+${ARCHITECT_LEVEL_ANATOMY}
 
 **Advanced Reasoning Integration:**
 - **Chain-of-Thought**: [Include step-by-step reasoning when complex analysis is needed]
@@ -154,7 +191,7 @@ ${ARCHITECT_ANATOMY}
 **Techniques:** CO-STAR framework + Chain-of-Thought for complex reasoning
 **Anatomy:**
 \`\`\`markdown
-${PRO_ANATOMY}
+${PRO_LEVEL_ANATOMY}
 
 **Reasoning Enhancement:**
 - **Thinking Process**: [Include "Let me think step by step" for complex tasks]
@@ -292,10 +329,10 @@ export const EXAMPLE_PROMPTS: PromptStarter[] = [
     title: 'Find a Memory Leak',
     prompt: 'I suspect a memory leak in my {{language}} app. Here’s the scenario and some code. Help me identify potential leak sources.\n\n```{{code_or_context}}```',
   },
-  {
-    title: 'Create Test Cases',
-    prompt: 'Write unit tests in {{test_framework}} for this function:\n\n```{{function_code}}```',
-  },
+      {
+      title: 'Create Test Cases',
+      prompt: 'Write unit tests in {{test_framework}} for this function:\n\n```{{function_code}}```',
+    },
 
   // ──────────────── LLM & PROMPT ENGINEERING ────────────────
   {
@@ -364,7 +401,7 @@ export const EXAMPLE_PROMPTS: PromptStarter[] = [
   },
   {
     title: 'Simplify Content Script',
-    prompt: 'Here’s a Chrome extension content script. Simplify and document it clearly:\n\n```{{script_code}}```',
+    prompt: 'Here\'s a Chrome extension content script. Simplify and document it clearly:\n\n```{{script_code}}```',
   },
 
   // ──────────────── GENERAL ANALYSIS ────────────────

@@ -10,16 +10,16 @@ import MarkdownRenderer from './MarkdownRenderer.tsx';
 // --- Sub-components ---
 
 const ErrorDisplay: React.FC<{ message: string, onDismiss: () => void }> = ({ message, onDismiss }) => (
-    <div className="bg-red-900/50 border border-red-500/50 text-red-200 p-4 rounded-lg m-2">
+    <div className="glass-panel border-red-500/50 text-red-200 p-4 rounded-lg m-2">
       <div className="flex items-start">
         <ExclamationTriangleIcon className="h-5 w-5 mr-3 mt-0.5 text-red-400 flex-shrink-0" />
         <div className="flex-grow">
-          <h3 className="font-semibold">An error occurred</h3>
-          <p className="text-sm">{message}</p>
+          <h3 className="font-semibold glass-text">An error occurred</h3>
+          <p className="text-sm glass-text-subtle">{message}</p>
         </div>
         <button
           onClick={onDismiss}
-          className="ml-4 px-2 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-500 rounded-md"
+          className="ml-4 px-2 py-1 text-xs font-semibold text-white glass-button hover:glass-hover rounded-md"
         >
           Dismiss
         </button>
@@ -32,16 +32,16 @@ const SkeletonLoader: React.FC = () => (
         <div className="relative animate-[shimmer_1.5s_infinite]">
             <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-zinc-900 via-zinc-800/50 to-zinc-900"></div>
             <div className="space-y-4">
-                <div className="h-5 bg-zinc-800 rounded w-1/3"></div>
+                <div className="h-5 glass-card rounded w-1/3"></div>
                 <div className="space-y-2">
-                  <div className="h-4 bg-zinc-800 rounded w-full"></div>
-                  <div className="h-4 bg-zinc-800 rounded w-5/6"></div>
+                  <div className="h-4 glass-card rounded w-full"></div>
+                  <div className="h-4 glass-card rounded w-5/6"></div>
                 </div>
                 <div className="pt-4 space-y-2">
-                  <div className="h-5 bg-zinc-800 rounded w-1/4"></div>
-                  <div className="h-4 bg-zinc-800 rounded w-full"></div>
-                  <div className="h-4 bg-zinc-800 rounded w-full"></div>
-                  <div className="h-4 bg-zinc-800 rounded w-4/6"></div>
+                  <div className="h-5 glass-card rounded w-1/4"></div>
+                  <div className="h-4 glass-card rounded w-full"></div>
+                  <div className="h-4 glass-card rounded w-full"></div>
+                  <div className="h-4 glass-card rounded w-4/6"></div>
                 </div>
             </div>
         </div>
@@ -53,8 +53,8 @@ const EmptyState: React.FC = () => (
         <div className="mb-4 text-fuchsia-500">
             <LogoIcon />
         </div>
-        <h3 className="text-xl font-semibold text-zinc-200">Unlock Your AI's Potential</h3>
-        <p className="max-w-sm text-zinc-400">
+        <h3 className="text-xl font-semibold glass-text">Unlock Your AI's Potential</h3>
+        <p className="max-w-sm glass-text-subtle">
             Start by writing a prompt on the left, choose your settings, then click 'Optimize Prompt' to see the magic happen.
         </p>
     </div>
@@ -63,9 +63,9 @@ const EmptyState: React.FC = () => (
 const CollapsibleSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
   return (
     <details className="group" open>
-      <summary className="flex items-center gap-2 cursor-pointer list-none p-2 rounded-md hover:bg-zinc-800/50">
+      <summary className="flex items-center gap-2 cursor-pointer list-none p-2 rounded-md hover:glass-hover glass-card">
         <ChevronRightIcon className="w-4 h-4 text-zinc-500 transition-transform group-open:rotate-90" />
-        <span className="font-semibold text-zinc-200">{title}</span>
+        <span className="font-semibold glass-text">{title}</span>
       </summary>
       <div className="pl-6 pt-1 pb-2 border-l border-zinc-800 ml-2 prose prose-sm prose-invert max-w-none">
         {children}
@@ -105,18 +105,18 @@ const MoreOptionsMenu: React.FC<{
 
   return (
     <div className="relative" ref={menuRef}>
-      <button onClick={() => setIsOpen(!isOpen)} className="p-2 w-9 h-9 flex items-center justify-center rounded-md text-zinc-400 hover:text-white hover:bg-zinc-700">
+      <button onClick={() => setIsOpen(!isOpen)} className="p-2 w-9 h-9 flex items-center justify-center rounded-md text-zinc-400 hover:text-white hover:glass-hover glass-card">
         <EllipsisVerticalIcon className="w-5 h-5" />
       </button>
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 origin-top-right bg-zinc-900/90 backdrop-blur-sm divide-y divide-zinc-700 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+        <div className="absolute right-0 mt-2 w-56 origin-top-right glass-panel-lg backdrop-blur-sm divide-y divide-zinc-700 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
           <div className="py-1">
             {menuItems.map(({ label, icon: Icon, action, color }) => (
               <button
                 key={label}
                 onClick={() => { action(); setIsOpen(false); }}
                 disabled={!prompt}
-                className={`w-full text-left flex items-center gap-3 px-4 py-2 text-sm transition-colors disabled:opacity-50 ${color || 'text-zinc-200'} enabled:hover:bg-zinc-700`}
+                className={`w-full text-left flex items-center gap-3 px-4 py-2 text-sm transition-colors disabled:opacity-50 ${color || 'glass-text'} enabled:hover:glass-hover`}
               >
                 <Icon className={`w-5 h-5 ${color || 'text-zinc-400'}`} />
                 <span>{label}</span>
@@ -316,36 +316,36 @@ export const PromptOutput: React.FC<PromptOutputProps> = React.memo(({
   };
   
   return (
-    <div className="relative flex flex-col h-full bg-zinc-900 rounded-xl shadow-2xl ring-1 ring-zinc-800">
-      <div className="flex-shrink-0 flex justify-between items-center bg-zinc-800/80 px-4 py-2 rounded-t-xl">
-        <h2 className="text-base font-semibold text-zinc-200">Optimized Prompt</h2>
+    <div className="relative flex flex-col h-full glass-panel-xl shadow-2xl">
+      <div className="flex-shrink-0 flex justify-between items-center glass-panel px-4 py-2 rounded-t-xl">
+        <h2 className="text-base font-semibold glass-text">Optimized Prompt</h2>
         <div className="flex items-center gap-1">
             <button
               onClick={onSave}
               disabled={!prompt || isLoading || isSaving}
-              className="p-2 w-9 h-9 flex items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed group relative text-zinc-400 enabled:hover:text-white enabled:hover:bg-zinc-700"
+              className="p-2 w-9 h-9 flex items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed group relative text-zinc-400 enabled:hover:text-white enabled:hover:glass-hover glass-card"
               aria-label={saveButtonTooltip}
             >
               {isSaving ? <Loader /> : <BookmarkIcon className="w-5 h-5" />}
-               <span className="absolute bottom-full right-1/2 translate-x-1/2 mb-2 w-max px-2 py-1 text-xs text-white bg-zinc-950 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+               <span className="absolute bottom-full right-1/2 translate-x-1/2 mb-2 w-max px-2 py-1 text-xs text-white glass-panel rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 {saveButtonTooltip}
               </span>
             </button>
             <button
               onClick={() => onRefine(prompt)}
               disabled={!prompt || isLoading || isSaving}
-              className="p-2 w-9 h-9 flex items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed group relative text-zinc-400 enabled:hover:text-white enabled:hover:bg-zinc-700"
+              className="p-2 w-9 h-9 flex items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed group relative text-zinc-400 enabled:hover:text-white enabled:hover:glass-hover glass-card"
               aria-label="Refine this prompt"
             >
               <PencilSquareIcon className="w-5 h-5" />
-              <span className="absolute bottom-full right-1/2 translate-x-1/2 mb-2 w-max px-2 py-1 text-xs text-white bg-zinc-950 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              <span className="absolute bottom-full right-1/2 translate-x-1/2 mb-2 w-max px-2 py-1 text-xs text-white glass-panel rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 Refine
               </span>
             </button>
             <button
               onClick={handleCopy}
               disabled={!prompt || copied || isLoading}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-md text-white bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-md text-white glass-button hover:glass-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {copied ? <CheckIcon /> : <CopyIcon />}
               {copied ? 'Copied!' : 'Copy'}
@@ -366,7 +366,7 @@ export const PromptOutput: React.FC<PromptOutputProps> = React.memo(({
         {renderContent()}
       </div>
        {prompt && !isLoading && !error && (
-         <div className="flex-shrink-0 border-t border-zinc-800 px-4 py-1.5 text-xs text-zinc-500 text-right space-x-2">
+         <div className="flex-shrink-0 border-t border-zinc-800 px-4 py-1.5 text-xs text-zinc-500 text-right space-x-2 glass-text-subtle">
              <span>{promptStats.tokens === null ? '--' : promptStats.tokens} tokens</span>
              <span className="text-zinc-600">/</span>
              <span>{promptStats.words} words</span>

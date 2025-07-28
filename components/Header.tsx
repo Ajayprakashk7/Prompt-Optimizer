@@ -11,14 +11,14 @@ interface HeaderProps {
 
 export const Header = React.memo<HeaderProps>(({ onHistoryClick, onOptimizationHistoryClick, onSettingsClick, hasPersonalKey, remainingRequests }) => {
   return (
-    <header className="flex items-center justify-between border-b border-zinc-800 flex-shrink-0 bg-zinc-950" style={{ padding: 'var(--space-2) var(--container-padding)', minHeight: '48px' }}>
+    <header className="flex items-center justify-between border-b border-zinc-800/50 flex-shrink-0 glass-panel" style={{ padding: 'var(--space-2) var(--container-padding)', minHeight: '48px' }}>
       <div className="flex items-center gap-2">
         <LogoIcon />
         <div className="text-left min-w-0">
-          <h1 className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-500 to-cyan-500 truncate" style={{ fontSize: 'var(--text-lg)' }}>
+          <h1 className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-500 to-cyan-500 truncate glass-text" style={{ fontSize: 'var(--text-lg)' }}>
             Prompt Optimizer
           </h1>
-          <p className="text-medium-contrast truncate" style={{ fontSize: 'var(--text-xs)', lineHeight: '1.2', marginTop: '1px' }}>
+          <p className="text-medium-contrast truncate glass-text-subtle" style={{ fontSize: 'var(--text-xs)', lineHeight: '1.2', marginTop: '1px' }}>
             Transform your ideas into exceptional AI prompts.
           </p>
         </div>
@@ -26,7 +26,7 @@ export const Header = React.memo<HeaderProps>(({ onHistoryClick, onOptimizationH
       <div className="flex items-center gap-1">
         {hasPersonalKey ? null : (
             <div
-              className="font-medium text-subtle-contrast bg-zinc-800/50 ring-1 ring-zinc-700/50 rounded-full"
+              className="font-medium text-subtle-contrast glass-card ring-1 ring-zinc-700/50 rounded-full"
               style={{ fontSize: 'var(--text-xs)', padding: '4px 8px' }}
               aria-live="polite"
             >
@@ -35,7 +35,7 @@ export const Header = React.memo<HeaderProps>(({ onHistoryClick, onOptimizationH
         )}
         <button
           onClick={onHistoryClick}
-          className="p-1.5 rounded-full text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+          className="p-1.5 rounded-full text-zinc-400 hover:glass-hover glass-card transition-all"
           aria-label="Saved Prompts"
           title="Saved Prompts (Templates)"
         >
@@ -43,7 +43,7 @@ export const Header = React.memo<HeaderProps>(({ onHistoryClick, onOptimizationH
         </button>
         <button
           onClick={onOptimizationHistoryClick}
-          className="p-1.5 rounded-full text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+          className="p-1.5 rounded-full text-zinc-400 hover:glass-hover glass-card transition-all"
           aria-label="Optimization History"
           title="Optimization History"
         >
@@ -51,7 +51,7 @@ export const Header = React.memo<HeaderProps>(({ onHistoryClick, onOptimizationH
         </button>
         <button
           onClick={onSettingsClick}
-          className="p-1.5 rounded-full text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+          className="p-1.5 rounded-full text-zinc-400 hover:glass-hover glass-card transition-all"
           aria-label="API Key Settings"
           title="API Key Settings"
         >

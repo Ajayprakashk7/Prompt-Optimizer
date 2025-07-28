@@ -46,17 +46,17 @@ export const ModeSelector = React.memo<ModeSelectorProps>(({ modes, selectedMode
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-2">
-        <label className="flex items-center gap-2 font-medium text-zinc-300" style={{ fontSize: 'var(--text-sm)' }}>
+        <label className="flex items-center gap-2 font-medium glass-text" style={{ fontSize: 'var(--text-sm)' }}>
           <TuneIcon />
           Prompt Mode
         </label>
       </div>
 
       {/* Switch-Style Mode Selector - Matching Extension Design */}
-      <div className="relative w-full bg-zinc-800 rounded-lg p-1 ring-1 ring-zinc-700">
+      <div className="relative w-full glass-panel rounded-lg p-1 ring-1 ring-zinc-700/50">
         {/* Sliding Indicator */}
         <div
-          className="absolute top-1 bottom-1 bg-indigo-600 rounded-md transition-all duration-300 ease-out shadow-lg"
+          className="absolute top-1 bottom-1 glass-button rounded-md transition-all duration-300 ease-out shadow-lg"
           style={getIndicatorStyle()}
         />
 
@@ -88,13 +88,13 @@ export const ModeSelector = React.memo<ModeSelectorProps>(({ modes, selectedMode
                 </span>
 
                 {/* Smart Tooltip with Responsive Positioning */}
-                <div className={`absolute bottom-full mb-3 w-64 px-3 py-2.5 text-xs text-left text-zinc-300 bg-zinc-950/95 backdrop-blur-sm rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none ring-1 ring-zinc-700/50 shadow-xl z-30 transform group-hover:translate-y-0 translate-y-1 ${
+                <div className={`absolute bottom-full mb-3 w-64 px-3 py-2.5 text-xs text-left text-zinc-300 glass-panel-lg backdrop-blur-sm rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none ring-1 ring-zinc-700/50 shadow-xl z-30 transform group-hover:translate-y-0 translate-y-1 ${
                   mode.value === modes[0].value ? 'left-0' :
                   mode.value === modes[modes.length - 1].value ? 'right-0' :
                   'left-1/2 -translate-x-1/2'
                 }`}>
-                  <div className="font-semibold text-white mb-1.5 text-sm">{mode.label} Mode</div>
-                  <div className="text-zinc-300 leading-relaxed">
+                  <div className="font-semibold glass-text mb-1.5 text-sm">{mode.label} Mode</div>
+                  <div className="glass-text-subtle leading-relaxed">
                     {parseSimpleMarkdown(mode.description)}
                   </div>
 
